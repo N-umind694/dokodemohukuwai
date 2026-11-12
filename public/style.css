@@ -582,6 +582,20 @@ a.btn {
   color: var(--cream);
 }
 
+/* 写真の読み込みの案内 */
+#photo-status {
+  margin: calc(-1 * var(--lift) + 12px) 0 0;
+  min-height: 1.5em;
+  color: var(--cream-dim);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+#photo-status.error {
+  color: var(--peach);
+}
+
 /* ---- 結果 ---- */
 
 /* 結果のシート。結果カードの画像と同じ構成で、真ん中の窓から後ろの 3D の完成画を見せる */

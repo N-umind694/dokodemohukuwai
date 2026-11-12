@@ -103,6 +103,12 @@ export class TitleShow {
     this.lastKnock = 0;
   }
 
+  // 3D の画面と物理から取り除く（素材を作り直すとき）
+  dispose(scene) {
+    this.hide();
+    for (const item of this.items) scene.remove(item.holder, item.shadow);
+  }
+
   start() {
     this.hide();
     this.elapsed = 0;

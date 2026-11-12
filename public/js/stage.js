@@ -94,6 +94,14 @@ export class Stage {
   }
 
   setBoard(texture) {
+    // 2 回目からは、上面の画像だけを差し替える
+    if (this.board) {
+      const top = this.board.material[2];
+      top.map.dispose();
+      top.map = texture;
+      top.needsUpdate = true;
+      return;
+    }
     texture.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
     const side = new THREE.MeshStandardMaterial({ color: BOARD_SIDE_COLOR, roughness: 1 });
     // 写真の色をそのまま出すため、上面はライティングの影響を受けない素材にする
