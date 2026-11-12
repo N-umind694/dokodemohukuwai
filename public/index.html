@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#3b2a24">
+  <title>どこでも福笑い（仮）</title>
+  <!-- 検索エンジンに載せない -->
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./js/main.js"></script>
+</head>
+<body>
+  <div id="dim"></div>
+  <canvas id="stage"></canvas>
+  <!-- 完成演出：色味・周辺の陰り・上下の黒帯 -->
+  <div id="grade"></div>
+  <div id="vignette"></div>
+  <!-- カットの切り替わりで出す白い閃光 -->
+  <div id="flash"></div>
+  <div id="letterbox"><i></i><i></i></div>
+  <div id="sheen"></div>
+
+  <div id="hud" hidden>
+    <!-- 置いた数の点と、いま落とすパーツ -->
+    <div class="hud-chip hud-progress">
+      <span class="sr-only"><span id="hud-count">0</span> / <span id="hud-total">7</span></span>
+      <span id="hud-dots" aria-hidden="true"></span>
+      <span class="hud-part"><small>いま</small><span id="hud-name"></span></span>
+    </div>
+    <button id="pause-btn" class="hud-chip hud-pause" type="button" aria-label="一時停止">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6v12"/><path d="M15 6v12"/></svg>
+    </button>
+  </div>
+  <p id="hint" hidden></p>
+
+  <section id="title-screen" class="overlay">
+    <h1 id="title-logo">どこでも福笑い（仮）</h1>
+    <div class="title-bottom">
+      <div id="mode-select" class="actions" hidden>
+        <p class="mode-heading">モードを選ぶ</p>
+        <button id="mode-normal" class="btn btn-primary btn-wide btn-mode" type="button">通常モード</button>
+        <button id="mode-blind" class="btn btn-glass btn-wide btn-mode btn-blind" type="button">目隠しモード</button>
+        <button id="mode-back" class="btn-text" type="button">戻る</button>
+      </div>
+      <div id="title-actions" class="actions">
+        <button id="start-btn" class="btn btn-primary btn-main" type="button" disabled>読み込み中…</button>
+        <button id="settings-btn" class="btn btn-glass" type="button">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10"/><path d="M18 7h2"/><circle cx="16" cy="7" r="2"/><path d="M4 17h4"/><path d="M12 17h8"/><circle cx="10" cy="17" r="2"/></svg>
+          <span>設定</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section id="result-screen" class="overlay" hidden>
+    <div id="result-band" class="sheet" hidden>
+      <header class="sheet-head">
+        <span class="sheet-logo">どこでも福笑い（仮）</span>
+        <span class="sheet-tags">
+          <span id="result-mode" hidden>目隠しモード</span>
+          <span class="sheet-kind">福笑い評価シート</span>
+        </span>
+      </header>
+      <!-- この窓から、後ろの 3D の完成画が見える -->
+      <div id="result-window" class="sheet-window" role="button" aria-label="完成画を拡大して見る">
+        <span class="zoom-hint" aria-hidden="true">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/><path d="M11 8.5v5"/><path d="M8.5 11h5"/></svg>タップで拡大
+        </span>
+      </div>
+      <div class="sheet-body">
+        <p id="result-score"><span class="label">評価</span><span id="result-points">0</span><span class="unit">点</span></p>
+        <p id="result-rank"></p>
+        <p id="result-comment"></p>
+        <div class="sheet-parts">
+          <p class="sheet-caption">パーツごとの一致度</p>
+          <ul id="result-parts"></ul>
+        </div>
+      </div>
+    </div>
+    <div id="save-choice" class="actions" hidden>
+      <button id="save-card" class="btn btn-primary" type="button">結果カード</button>
+      <button id="save-face" class="btn btn-glass" type="button">顔だけ</button>
+      <button id="save-back" class="btn-text" type="button">戻る</button>
+    </div>
+    <div id="result-actions" class="actions" hidden>
+      <button id="save-btn" class="btn btn-glass" type="button" disabled>
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>
+        <span id="save-label">準備中…</span>
+      </button>
+      <button id="retry-btn" class="btn btn-glass" type="button">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>
+        <span>もう一回</span>
+      </button>
+      <button id="to-title-btn" class="btn btn-glass" type="button">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/></svg>
+        <span>タイトルへ</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- 完成画の拡大表示。指で払うとカメラが回り込み、2 本指で寄り引きできる -->
+  <div id="viewer" hidden>
+    <p id="viewer-hint">スワイプで動かす　タップで戻る</p>
+  </div>
+
+  <div id="pause" class="modal" hidden>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="pause-heading">
+      <h2 id="pause-heading">一時停止</h2>
+      <button id="pause-resume" class="btn-classic" type="button">再開</button>
+      <button id="pause-retry" class="btn-classic" type="button">やり直す</button>
+      <button id="pause-title" class="btn-classic" type="button">タイトルへ</button>
+    </div>
+  </div>
+
+  <div id="settings" class="modal" hidden>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="settings-heading">
+      <h2 id="settings-heading">設定</h2>
+      <label class="toggle"><span>BGM</span><input type="checkbox" data-key="bgm"><i></i></label>
+      <label class="toggle"><span>効果音</span><input type="checkbox" data-key="se"><i></i></label>
+      <label class="toggle"><span>スワイプ回転</span><input type="checkbox" data-key="swipe"><i></i></label>
+      <!-- 振動できない端末（iPhone など）では出さない -->
+      <label id="vibration-row" class="toggle" hidden><span>振動</span><input type="checkbox" data-key="vibration"><i></i></label>
+      <button id="settings-close" class="btn-classic" type="button">閉じる</button>
+    </div>
+  </div>
+</body>
+</html>
