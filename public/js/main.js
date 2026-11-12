@@ -1,5 +1,6 @@
 import * as THREE from '../vendor/three/three.module.min.js';
-import { loadAssets } from './assets.js';
+import { buildAssets } from './assets.js';
+import { CANVAS, makeSampleFace, makePhotoFace } from './faceAssets.js';
 import { layoutToWorld, faceZone, WANDER_MARGIN } from './config.js';
 import { Stage, FOV } from './stage.js';
 import { Part } from './part.js';
@@ -74,6 +75,9 @@ const ui = {
   modeBlind: $('mode-blind'),
   modeBack: $('mode-back'),
   start: $('start-btn'),
+  photo: $('photo-btn'),
+  photoInput: $('photo-input'),
+  photoStatus: $('photo-status'),
   settingsBtn: $('settings-btn'),
   result: $('result-screen'),
   resultBand: $('result-band'),
@@ -127,17 +131,12 @@ let swipe = null; // 落とした指の軌跡 { id, part, points: [{ x, y, t }] 
 let paused = false; // プレイ中の一時停止
 let viewer = null; // 完成画の拡大表示 { phi, lean, zoom, time, from, closing, pointers, moved, pinch }
 
-async function init() {
-  let assets;
-  try {
-    assets = await loadAssets();
-  } catch (err) {
-    console.error(err);
-    ui.start.textContent = '読み込みに失敗しました';
-    return;
+// 土台とパーツを、与えた素材で作る（2 回目からは前のものを取り除いて作り直す）
+function setupFace(assets) {
+  if (parts.length) {
+    for (const part of parts) stage.world.remove(part.group, part.shadow);
+    titleShow.dispose(stage.world);
   }
-
-  stage = new Stage(ui.canvas, assets.canvas);
   stage.setBoard(assets.baseTexture);
   face = faceZone(assets.canvas, assets.parts, WANDER_MARGIN);
   stage.ctx.wanderZone = face;
@@ -151,6 +150,11 @@ async function init() {
   stage.applySpotlight();
   ui.hudTotal.textContent = parts.length;
   ui.hudDots.replaceChildren(...parts.map(() => document.createElement('i')));
+}
+
+async function init() {
+  stage = new Stage(ui.canvas, CANVAS);
+  setupFace(buildAssets(makeSampleFace()));
 
   stage.resize();
   window.addEventListener('resize', () => {
@@ -175,6 +179,12 @@ async function init() {
     window.addEventListener(type, () => sound.unlock(), { capture: true });
   }
   ui.start.addEventListener('click', onStart);
+  ui.photo.addEventListener('click', () => {
+    if (phase !== 'title') return;
+    sound.play('tap');
+    ui.photoInput.click();
+  });
+  ui.photoInput.addEventListener('change', onPhotoChosen);
   ui.modeNormal.addEventListener('click', () => chooseMode('normal'));
   ui.modeBlind.addEventListener('click', () => chooseMode('blind'));
   ui.modeBack.addEventListener('click', closeModeSelect);
@@ -288,6 +298,36 @@ function updateTitle(dt) {
   titleTime += dt;
   stage.pose = titlePose(orbitTheta(titleTime));
   titleShow.update(dt);
+}
+
+// 選んだ写真から顔を切り出して、土台とパーツを作り直す
+async function onPhotoChosen() {
+  const file = ui.photoInput.files?.[0];
+  ui.photoInput.value = '';
+  if (!file || phase !== 'title') return;
+  ui.start.disabled = true;
+  ui.photo.disabled = true;
+  setPhotoStatus('顔をさがしています…');
+  try {
+    const photoFace = await makePhotoFace(file);
+    if (phase !== 'title') return;
+    setupFace(buildAssets(photoFace));
+    titleShow.start();
+    setPhotoStatus('写真の顔で遊べます');
+  } catch (err) {
+    console.error(err);
+    setPhotoStatus(err.message === 'no-face'
+      ? '顔が見つかりませんでした。正面を向いた明るい写真を選んでください'
+      : '写真を読み込めませんでした', true);
+  } finally {
+    ui.start.disabled = false;
+    ui.photo.disabled = false;
+  }
+}
+
+function setPhotoStatus(text, error = false) {
+  ui.photoStatus.textContent = text;
+  ui.photoStatus.classList.toggle('error', error);
 }
 
 // 通常モードと目隠しモードのどちらで遊ぶか、先に選ばせる

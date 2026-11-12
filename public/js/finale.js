@@ -50,7 +50,7 @@ export const SHOTS = [
   // 4: 部位のカットを畳みかける。どれも入りでガッと寄る
   { at: CUES.cut4, focus: 'eye_left', focusTo: 'eye_right', grade: 'amber', from: { r: 2.6, phi: deg(68), theta: deg(-40), roll: 0.1 }, to: { r: 1.7, theta: deg(-15), roll: 0.02 } },
   { at: CUES.cut4b, focus: 'nose', focusTo: 'mouth', grade: 'teal', from: { r: 2.6, phi: deg(62), theta: deg(30), roll: -0.1 }, to: { r: 1.6, theta: deg(40), roll: -0.02 } },
-  { at: CUES.cut4c, focus: 'wart', grade: 'crimson', from: { r: 1.9, phi: deg(68), theta: deg(-25), roll: 0.08 }, to: { r: 1.0, theta: 0, roll: 0 } },
+  { at: CUES.cut4c, focus: 'brow_left', focusTo: 'brow_right', grade: 'crimson', from: { r: 1.9, phi: deg(68), theta: deg(-25), roll: 0.08 }, to: { r: 1.0, theta: 0, roll: 0 } },
   // 5: 斜めから真上へ上がり、6 カット目の完成画に着地する
   { at: CUES.rise, focus: 'face', grade: null, ease: 'inOut', from: { r: 3.2, phi: deg(72), theta: deg(-45) }, to: 'result' },
 ];
