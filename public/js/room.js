@@ -21,6 +21,7 @@ const COLOR = {
 export const ROOM_FLOOR_Y = FLOOR_Y;
 
 // 部屋をまるごと作る。table は座卓（土台を立てる場面では隠す）、hinadan はひな壇（土台を立てる場面だけ出す）
+// 部屋の材質は光の計算をしない、いちばん軽い描き方（Basic）にする。
 // 部屋の素材写真を読み込む。ページを開いたときに読み込んでおく
 const TEXTURE_NAMES = ['tatami', 'wood', 'shoji', 'plaster', 'fence', 'felt', 'outerwall', 'hinabamboo', 'bluecloth'];
 export async function loadRoomTextures() {
@@ -96,8 +97,8 @@ export function buildRoom(images) {
 export function buildHinadan(topY, floorY, frontZ, images) {
   const group = new THREE.Group();
   const feltMap = repeatTexture(images.felt, 4, 4);
-  const felt = new THREE.MeshStandardMaterial({ map: feltMap, roughness: 1 });
-  const side = new THREE.MeshStandardMaterial({ map: repeatTexture(images.hinabamboo, 2, 2), roughness: 0.9 });
+  const felt = new THREE.MeshBasicMaterial({ map: feltMap });
+  const side = new THREE.MeshBasicMaterial({ map: repeatTexture(images.hinabamboo, 2, 2) });
   // 箱の面の順：+x, -x, +y, -y, +z, -z。上と手前は毛氈、横と奥はひな壇の木地
   const faces = [side, side, felt, side, felt, side];
   const steps = 3;
@@ -156,11 +157,11 @@ function garden(pos, rotY, w, h, material) {
 // 鏡餅：三方（台）の上に、大小の餅と橙
 function kagamiMochi([x, y, z]) {
   const g = new THREE.Group();
-  const wood = new THREE.MeshStandardMaterial({ color: 0xd9b27a, roughness: 0.8 });
-  const mochi = new THREE.MeshStandardMaterial({ color: 0xfbf7ef, roughness: 0.6 });
-  const orange = new THREE.MeshStandardMaterial({ color: 0xf08a1c, roughness: 0.5 });
-  const leaf = new THREE.MeshStandardMaterial({ color: 0x2f7a33, roughness: 0.7 });
-  const paper = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 });
+  const wood = new THREE.MeshBasicMaterial({ color: 0xd9b27a });
+  const mochi = new THREE.MeshBasicMaterial({ color: 0xfbf7ef });
+  const orange = new THREE.MeshBasicMaterial({ color: 0xf08a1c });
+  const leaf = new THREE.MeshBasicMaterial({ color: 0x2f7a33 });
+  const paper = new THREE.MeshBasicMaterial({ color: 0xffffff });
   g.add(box(3.2, 1.6, 3.2, wood, [0, 0.8, 0]));
   g.add(box(3.6, 0.2, 3.6, paper, [0, 1.7, 0]));
   const big = new THREE.Mesh(new THREE.SphereGeometry(1.5, 24, 16), mochi);
@@ -182,7 +183,7 @@ function kagamiMochi([x, y, z]) {
 // ---- 素材 ----
 
 function makeMaterials(images) {
-  const std = (map, extra = {}) => new THREE.MeshStandardMaterial({ map, roughness: 0.9, ...extra });
+  const std = (map, extra = {}) => new THREE.MeshBasicMaterial({ map, ...extra });
   const plaster = std(repeatTexture(images.plaster, 1, 1));
   plaster.userData.unit = 16; // 土壁の写真 1 枚を 16 × 16 の広さに貼る
   const woodMap = srgb(new THREE.Texture(images.wood));
@@ -193,10 +194,10 @@ function makeMaterials(images) {
     fusuma: std(fusumaTexture(images)),
     shoji: new THREE.MeshBasicMaterial({ map: shojiTexture(images) }),
     garden: new THREE.MeshBasicMaterial({ map: gardenTexture(images) }),
-    scroll: std(scrollTexture(), { roughness: 0.8 }),
-    wood: std(woodMap, { roughness: 0.7 }),
-    woodLight: std(woodMap, { roughness: 0.7, color: 0xc9a080 }),
-    table: std(woodMap, { roughness: 0.45 }),
+    scroll: std(scrollTexture()),
+    wood: std(woodMap),
+    woodLight: std(woodMap, { color: 0xc9a080 }),
+    table: std(woodMap),
   };
 }
 
