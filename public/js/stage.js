@@ -2,6 +2,7 @@ import * as THREE from '../vendor/three/three.module.min.js';
 
 const Z_AXIS = new THREE.Vector3(0, 0, 1);
 import { PX } from './config.js';
+import { buildRoom, buildHinadan, ROOM_FLOOR_Y } from './room.js';
 
 export const FOV = 35;
 const BOARD_THICKNESS = 0.3;
@@ -13,7 +14,7 @@ const BOTTOM_RESERVE = 96;
 // 浮いているパーツの高さ（カメラの高さに対する割合）
 const HOVER_RATIO = 0.2;
 // タイトル画面で注視点の周りに収めたい範囲（幅, 高さ）
-const TITLE_VIEW = { w: 6.3, h: 12 };
+const TITLE_VIEW = { w: 9, h: 16 };
 
 // 完成演出のスポットライト。注視点のまわりを明るく残し、外側をこの明るさまで落とす
 const SPOT_DARK = 0.22;
@@ -22,7 +23,6 @@ const SPOT_FADE = 2.5; // 点く・消えるときの速さ（1 秒あたり）
 // 完成演出で土台を写真立てのように立てるときの床と脚
 const STAND = {
   angle: THREE.MathUtils.degToRad(76), // 床から起こす角度（90 度で垂直）
-  floorColor: 0x5a463d,
   legWidth: 0.35,
   legThickness: 0.08,
   legAttach: 0.55, // 脚を付ける位置（土台の下の辺から上の辺までの割合）
@@ -39,7 +39,7 @@ export class Stage {
     this.boardW = canvasSize.w * PX;
     this.boardD = canvasSize.h * PX;
 
-    // 背景は CSS で描くので、3D の背景は透明にする
+    // 部屋の外（開けた障子の先の遠く）は CSS の背景が透ける
     this.renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true, alpha: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setClearColor(0x000000, 0);
@@ -58,6 +58,9 @@ export class Stage {
     this.world.position.z = -this.boardD / 2;
     this.rig.add(this.world);
     this.scene.add(this.rig);
+    // 正月の和室。土台は部屋の真ん中の座卓の上に置く
+    this.room = buildRoom();
+    this.scene.add(this.room.group);
     this.initStand();
 
     this.camera = new THREE.PerspectiveCamera(FOV, 1, 0.2, 200);
@@ -185,11 +188,9 @@ export class Stage {
 
   // 床と、写真立ての脚・接地影を作る。土台を立てたときだけ見せる
   initStand() {
-    const floor = new THREE.Mesh(
-      new THREE.PlaneGeometry(200, 200),
-      new THREE.MeshStandardMaterial({ color: STAND.floorColor, roughness: 1 }),
-    );
-    floor.rotation.x = -Math.PI / 2;
+    // 立てた土台は、赤い毛氈のひな壇のいちばん上の段に飾る。stand の y は段の上面の高さ（setUpright で合わせる）
+    const floorY = -BOARD_THICKNESS * Math.cos(STAND.angle);
+    const floor = buildHinadan(0, ROOM_FLOOR_Y - floorY, this.boardD / 2 + 1.2);
 
     // 接地影：中心ほど濃い楕円をぼかした画像
     const canvas = document.createElement('canvas');
@@ -227,6 +228,8 @@ export class Stage {
     this.upright = on;
     this.rig.rotation.x = on ? STAND.angle : 0;
     this.stand.visible = on;
+    // 立てている間は座卓の代わりにひな壇を見せる
+    this.room.table.visible = !on;
     this.rig.updateMatrixWorld(true);
     if (!on) return;
     // 後ろへもたれた土台は裏面の下の辺で床に着く。床をその高さに合わせる
@@ -251,10 +254,12 @@ export class Stage {
 
   // いまシーンにある土台・パーツ・影の素材に、スポットライトの明暗を足す。床と脚には足さない
   applySpotlight() {
-    this.world.traverse((obj) => {
-      if (!obj.isMesh) return;
-      for (const material of [].concat(obj.material)) patchSpot(material, this.spot);
-    });
+    for (const group of [this.world, this.room.group, this.stand]) {
+      group.traverse((obj) => {
+        if (!obj.isMesh) return;
+        for (const material of [].concat(obj.material)) patchSpot(material, this.spot);
+      });
+    }
   }
 
   // スポットライトを点ける・消す。center は照らす中心 (x, z)、radius は明るく残す半径の目安

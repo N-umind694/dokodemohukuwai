@@ -18,7 +18,7 @@ const deg = THREE.MathUtils.degToRad;
 // タイトル画面：斜め上から土台の周りをゆっくり一周する。
 // 画像が逆さに見える後ろ側は早めに通り過ぎ、正面付近ではゆっくり回る
 const TITLE = {
-  tilt: deg(50),
+  tilt: deg(62),
   period: 18, // 一周の秒数
   frontBias: 0.9, // 0 で等速。1 に近いほど正面でゆっくり、後ろ側で速くなる（1 未満）
 };
@@ -154,7 +154,7 @@ function setupFace(assets) {
     stage.world.add(part.group, part.shadow);
     return part;
   });
-  titleShow = new TitleShow(stage.world, assets.parts, stage.boardW / 2, stage.boardD / 2, sound);
+  titleShow = new TitleShow(stage.world, assets.parts, stage.boardW / 2, stage.boardD / 2, sound, stage.room.tableHalf);
   stage.applySpotlight();
   ui.hudTotal.textContent = parts.length;
   ui.hudDots.replaceChildren(...parts.map(() => document.createElement('i')));

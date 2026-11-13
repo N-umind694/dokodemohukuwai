@@ -49,7 +49,7 @@ function limitSlide(velocity) {
 }
 
 export class TitleShow {
-  constructor(scene, partDefs, boardHalfW, boardHalfD, sound) {
+  constructor(scene, partDefs, boardHalfW, boardHalfD, sound, table = null) {
     this.sound = sound;
     this.boardHalfW = boardHalfW;
     this.boardHalfD = boardHalfD;
@@ -70,6 +70,16 @@ export class TitleShow {
     });
     board.position.set(0, -2, 0);
     this.world.addBody(board);
+    // 土台からこぼれたパーツは、座卓の天板で受け止める
+    if (table) {
+      const top = new CANNON.Body({
+        mass: 0,
+        material: boardMaterial,
+        shape: new CANNON.Box(new CANNON.Vec3(table.w, 2, table.d)),
+      });
+      top.position.set(0, table.y - 2, 0);
+      this.world.addBody(top);
+    }
 
     this.items = partDefs.map((def, i) => {
       // 物理の中心（厚みの中央）に見た目の中心を合わせる
