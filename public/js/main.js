@@ -1,5 +1,6 @@
 import * as THREE from '../vendor/three/three.module.min.js';
 import { buildAssets } from './assets.js';
+import { loadRoomTextures } from './room.js';
 import { CANVAS, makeSampleFace, makePhotoFace } from './faceAssets.js';
 import { layoutToWorld, faceZone, WANDER_MARGIN } from './config.js';
 import { Stage, FOV } from './stage.js';
@@ -161,7 +162,16 @@ function setupFace(assets) {
 }
 
 async function init() {
-  stage = new Stage(ui.canvas, CANVAS);
+  // 部屋の素材写真は最初に読み込んでおく
+  let roomImages;
+  try {
+    roomImages = await loadRoomTextures();
+  } catch (err) {
+    console.error(err);
+    ui.start.textContent = '読み込みに失敗しました';
+    return;
+  }
+  stage = new Stage(ui.canvas, CANVAS, roomImages);
   setupFace(buildAssets(makeSampleFace()));
 
   stage.resize();
