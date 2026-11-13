@@ -52,6 +52,7 @@ const VIEWER = {
   hintSpace: 64, // 上下に空ける幅。下の操作の案内と重ならないようにする (CSS px)
   tilt: 0.006, // 1px 払ったときに傾ける角度 (rad)
   maxTilt: 1.1, // 真上から上下・左右にどこまで傾けるか (rad)
+  maxTiltDown: 0.2, // ひな壇に立てかけているとき、ひな壇のある下側へ傾けられる量 (rad)。これ以上は段に埋まる
   minZoom: 0.4,
   maxZoom: 1.3,
   tapSlop: 8, // これより動かなければタップとみなして閉じる (CSS px)
@@ -746,6 +747,8 @@ function lerpPose(a, b, t) {
     ty: lerp(a.ty ?? 0, b.ty ?? 0, t),
     roll: lerp(a.roll ?? 0, b.roll ?? 0, t),
     fov: lerp(a.fov ?? FOV, b.fov ?? FOV, t),
+    // 立てかけた土台に対するカメラ位置かどうかは、行き先に合わせる
+    inBoard: b.inBoard ?? a.inBoard,
   };
 }
 
@@ -947,7 +950,8 @@ function onViewerMove(event) {
   } else {
     // 土台をつかんで倒すように動かす。下に払うと上の辺が手前に来て上側から、右に払うと左側から見る
     const max = VIEWER.maxTilt;
-    viewer.phi = THREE.MathUtils.clamp(viewer.phi - dy * VIEWER.tilt, -max, max);
+    const down = stage.upright ? VIEWER.maxTiltDown : max;
+    viewer.phi = THREE.MathUtils.clamp(viewer.phi - dy * VIEWER.tilt, -max, down);
     viewer.lean = THREE.MathUtils.clamp(viewer.lean - dx * VIEWER.tilt, -max, max);
   }
 }
