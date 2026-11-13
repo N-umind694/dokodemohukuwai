@@ -62,6 +62,7 @@ const ui = {
   canvas: $('stage'),
   grade: $('grade'),
   veil: $('veil'),
+  fade: $('fade'),
   sheen: $('sheen'),
   flash: $('flash'),
   hud: $('hud'),
@@ -137,6 +138,7 @@ let captureToken = 0;
 let lastTime = 0;
 let swipe = null; // 落とした指の軌跡 { id, part, points: [{ x, y, t }] }
 let paused = false; // プレイ中の一時停止
+let fading = false; // 暗転で場面を切り替えている途中か
 let photoFaceReady = false; // 選んだ画像の顔で遊べる状態か
 let viewer = null; // 完成画の拡大表示 { phi, lean, zoom, time, from, closing, pointers, moved, pinch }
 
@@ -257,10 +259,20 @@ async function init() {
     input.addEventListener('change', () => onSettingChange(input));
   }
   ui.retry.addEventListener('click', () => {
+    if (phase !== 'result' || fading) return;
     sound.play('tap');
-    startGame();
+    fadeThrough(() => {
+      stage.setUpright(false);
+      startGame();
+    });
   });
-  ui.toTitle.addEventListener('click', onToTitle);
+  ui.toTitle.addEventListener('click', () => {
+    if (phase !== 'result' || fading) return;
+    fadeThrough(() => {
+      stage.setUpright(false);
+      onToTitle();
+    });
+  });
   ui.pauseBtn.addEventListener('click', () => openPause());
   ui.pauseResume.addEventListener('click', closePause);
   ui.pauseRetry.addEventListener('click', () => {
@@ -428,6 +440,23 @@ function updateToGame(dt) {
   ui.modeSelect.hidden = true;
   ui.titleActions.hidden = false;
   startGame();
+}
+
+// 画面を暗転させ、真っ暗な間に場面を切り替えてから、明るく戻す
+const FADE_TIME = 500; // 暗くなる・明るくなる時間 (ms)
+function fadeThrough(change) {
+  fading = true;
+  ui.fade.classList.add('on');
+  setTimeout(() => {
+    change();
+    // 切り替えた場面が一度描かれてから明るくする
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      ui.fade.classList.remove('on');
+      setTimeout(() => {
+        fading = false;
+      }, FADE_TIME);
+    }));
+  }, FADE_TIME);
 }
 
 function onToTitle() {
@@ -731,7 +760,7 @@ async function enterResult({ synced = false, result = evaluate(parts, stage.canv
   // 評価の画面では、完成演出から流れている「正月の朝」をそのまま続ける
   sound.wantBgm('title');
   stage.setSpotlight(false);
-  stage.setUpright(false);
+  // 評価の画面も、ひな壇に飾ったまま見せる（座卓へは「もう一回」「タイトルへ」の暗転の間に戻す）
   ui.canvas.classList.remove('punch', 'cut');
   document.body.classList.remove('cinema');
   ui.canvas.classList.remove('mono');
@@ -836,7 +865,7 @@ function playResultVoice(result) {
 
 // シートの窓に完成画がちょうど収まるようにカメラを置く
 function fitResultCamera() {
-  stage.pose = stage.framePose(ui.resultWindow.getBoundingClientRect());
+  stage.pose = { ...stage.framePose(ui.resultWindow.getBoundingClientRect()), inBoard: Boolean(stage.upright) };
 }
 
 // ---- 完成画の拡大表示 ----
@@ -871,7 +900,7 @@ function viewerPose() {
   const h = window.innerHeight;
   const m = VIEWER.margin;
   const base = stage.framePose({ left: m, right: w - m, top: VIEWER.hintSpace, bottom: h - VIEWER.hintSpace });
-  return { tx: 0, tz: 0, r: base.r * viewer.zoom, phi: viewer.phi, theta: 0, lean: viewer.lean };
+  return { tx: 0, tz: 0, r: base.r * viewer.zoom, phi: viewer.phi, theta: 0, lean: viewer.lean, inBoard: Boolean(stage.upright) };
 }
 
 function updateViewer(dt) {
