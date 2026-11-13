@@ -11,14 +11,14 @@ import { loadSettings, saveSettings, canVibrate, vibrate } from './settings.js';
 import { Sound } from './audio.js';
 import { evaluate, SPECIAL_WART } from './scoring.js';
 import { RESULT_VOICES, SPECIAL_RESULT_VOICES } from './voices.js';
-import { CUES, GRADES, SHOTS, MUSIC_OFFSET, shotAt, shotPoses, beatPulse, handheld } from './finale.js';
+import { CUES, SHOTS, MUSIC_OFFSET, shotAt, shotPoses, handheld } from './finale.js';
 
 const deg = THREE.MathUtils.degToRad;
 
 // タイトル画面：斜め上から土台の周りをゆっくり一周する。
 // 画像が逆さに見える後ろ側は早めに通り過ぎ、正面付近ではゆっくり回る
 const TITLE = {
-  tilt: deg(50),
+  tilt: deg(62),
   period: 18, // 一周の秒数
   frontBias: 0.9, // 0 で等速。1 に近いほど正面でゆっくり、後ろ側で速くなる（1 未満）
 };
@@ -60,6 +60,7 @@ const $ = (id) => document.getElementById(id);
 const ui = {
   canvas: $('stage'),
   grade: $('grade'),
+  veil: $('veil'),
   sheen: $('sheen'),
   flash: $('flash'),
   hud: $('hud'),
@@ -153,7 +154,7 @@ function setupFace(assets) {
     stage.world.add(part.group, part.shadow);
     return part;
   });
-  titleShow = new TitleShow(stage.world, assets.parts, stage.boardW / 2, stage.boardD / 2, sound);
+  titleShow = new TitleShow(stage.world, assets.parts, stage.boardW / 2, stage.boardD / 2, sound, stage.room.tableHalf);
   stage.applySpotlight();
   ui.hudTotal.textContent = parts.length;
   ui.hudDots.replaceChildren(...parts.map(() => document.createElement('i')));
@@ -662,23 +663,12 @@ function updateFinale(dt) {
   const { from, to } = shotPoses(shot, finale.focus, finale.resultPose);
   if (index !== finale.shot) {
     finale.shot = index;
-    // カットの切り替わりで色味も切り替える
-    if (shot.grade) ui.grade.style.setProperty('--grade', GRADES[shot.grade]);
-    ui.grade.style.opacity = shot.grade ? '' : '0';
-    ui.canvas.classList.toggle('mono', Boolean(shot.mono));
     stage.setUpright(Boolean(shot.upright));
-    // カットの切り替わりで、画面に一瞬ブラーをかけて白く光らせる。強い一撃ではさらに露出を上げる
-    if (index > 0) {
-      const effect = shot.impact ? 'punch' : 'cut';
-      ui.canvas.classList.remove('punch', 'cut');
-      void ui.canvas.offsetWidth; // アニメーションを最初から再生し直す
-      ui.canvas.classList.add(effect);
-      playFx(ui.flash, { time: shot.impact ? 0.5 : 0.22, flash: shot.impact ? 0.9 : 0.35 });
-    }
+    // カットの切り替わりは、暗がりから静かに明けるように溶け込ませる
+    if (index > 0) playFx(ui.veil, { time: 0.7, flash: 0.6 });
   }
   const pose = lerpPose(from, to, progress);
-  pose.fov += beatPulse(time);
-  // 手持ちのような揺れ。完成画に降りる最後のカットでは、降りきるまでに収める
+  // 風に揺れるようなごくゆっくりした傾き。完成画に降りる最後のカットでは、降りきるまでに収める
   const last = index === SHOTS.length - 1;
   pose.roll += handheld(time) * (last ? 1 - progress : 1);
   pose.upright = Boolean(shot.upright);
@@ -688,7 +678,7 @@ function updateFinale(dt) {
   stage.setSpotlight(true, center, pose.r * 0.4 + 0.3);
 }
 
-// 閃光を最初から再生する。time は長さ（秒）、flash は閃光の強さ
+// 閃光・暗がりの幕を最初から再生する。time は長さ（秒）、flash は始まりの濃さ
 function playFx(el, { time, flash } = {}) {
   el.classList.remove('on');
   void el.offsetWidth;
@@ -733,8 +723,7 @@ async function enterResult({ synced = false, result = evaluate(parts, stage.canv
   ui.canvas.classList.remove('mono');
   ui.grade.style.opacity = '';
   if (synced) {
-    // 完成画に着地した瞬間、軽く光らせ、光の筋を一度だけ走らせる
-    playFx(ui.flash, { time: 0.35, flash: 0.4 });
+    // 完成画に着地した瞬間、光の筋を一度だけゆっくり走らせる
     ui.sheen.classList.remove('on');
     void ui.sheen.offsetWidth;
     ui.sheen.classList.add('on');

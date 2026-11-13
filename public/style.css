@@ -138,6 +138,46 @@ body {
   pointer-events: none;
 }
 
+/* 演出中の暖かい光。初日の出のような光だまりが、画面の上をゆっくり漂う */
+#glow {
+  position: fixed;
+  inset: -20%;
+  background:
+    radial-gradient(38% 30% at 32% 28%, rgba(255, 210, 140, 0.32), rgba(255, 210, 140, 0) 70%),
+    radial-gradient(30% 26% at 72% 70%, rgba(255, 170, 110, 0.16), rgba(255, 170, 110, 0) 70%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity 1.6s ease;
+  pointer-events: none;
+}
+
+body.cinema #glow {
+  opacity: 1;
+  animation: glow-drift 10s ease-in-out infinite alternate;
+}
+
+@keyframes glow-drift {
+  from {
+    transform: translate(-5%, -4%);
+  }
+  to {
+    transform: translate(6%, 5%);
+  }
+}
+
+/* カットの切り替わりの幕。濃い紅の暗がりから、ゆっくり明ける */
+#veil {
+  position: fixed;
+  inset: 0;
+  background: #1c0306;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#veil.on {
+  animation: flash var(--fx-time, 0.7s) cubic-bezier(0.3, 0, 0.3, 1) both;
+}
+
 /* 白い閃光。強さは --fx-flash で変える */
 #flash {
   position: fixed;
@@ -191,8 +231,9 @@ body.blind #dim {
   transition: none;
 }
 
+/* 色味は変えない */
 body.cinema #grade {
-  opacity: 0.5;
+  opacity: 0;
 }
 
 body.cinema #vignette {
@@ -243,7 +284,7 @@ body.cinema #letterbox i {
 }
 
 #sheen.on {
-  animation: sheen 0.9s cubic-bezier(0.3, 0, 0.2, 1);
+  animation: sheen 1.8s cubic-bezier(0.45, 0, 0.25, 1);
 }
 
 @keyframes sheen {
@@ -538,7 +579,7 @@ a.btn {
 
 #title-logo img {
   display: block;
-  width: min(68vw, 340px, 40vh);
+  width: min(56vw, 270px, 30vh);
   height: auto;
   margin: 0 auto;
   filter: drop-shadow(0 8px 18px rgba(45, 0, 4, 0.45));
@@ -556,28 +597,29 @@ a.btn {
 }
 
 .kadomatsu {
-  bottom: calc(var(--edge-bottom) + var(--lift) + 150px);
-  width: clamp(54px, 15vw, 96px);
+  /* 大きく置き、左右と下は画面の外へはみ出させる。ボタンの後ろに回る */
+  bottom: -36px;
+  width: clamp(150px, 42vw, 250px);
   height: auto;
   aspect-ratio: 1 / 2;
   filter: drop-shadow(0 6px 10px rgba(45, 0, 4, 0.45));
 }
 
 .kadomatsu-left {
-  left: 6px;
+  left: -40px;
 }
 
 .kadomatsu-right {
-  right: 6px;
+  right: -40px;
   transform: scaleX(-1);
 }
 
 .ume {
   top: env(safe-area-inset-top);
-  width: clamp(80px, 24vw, 140px);
+  width: clamp(64px, 18vw, 110px);
   height: auto;
   aspect-ratio: 4 / 3;
-  opacity: 0.95;
+  opacity: 0.9;
 }
 
 .ume-left {
@@ -591,6 +633,11 @@ a.btn {
 
 #title-screen > :not(#title-deco) {
   position: relative;
+}
+
+/* ロゴを上に寄せる */
+#title-screen {
+  padding-top: calc(env(safe-area-inset-top) + 10px);
 }
 
 .title-bottom {
@@ -1151,8 +1198,29 @@ a.btn {
 }
 
 .modal-panel {
-  max-height: calc(100vh - 32px);
+  /* iPhone の 100vh はアドレスバーの分だけ大きいので、見えている高さ（dvh）に収める */
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow: hidden;
+}
+
+/* 長い本文はここだけ流れるようにし、ボタンは常に見えるようにする */
+.modal-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#privacy .modal-panel h2 {
+  font-size: 19px;
+}
+
+#privacy .btn-classic,
+#no-photo .btn-classic {
+  margin-top: 10px;
+  padding: 10px;
+  font-size: 16px;
 }
 
 /* ポップアップの本文 */
@@ -1174,14 +1242,14 @@ a.btn {
 .modal-list {
   margin: 0;
   padding-left: 1.2em;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  line-height: 1.65;
+  line-height: 1.55;
   text-align: left;
 }
 
 .modal-list li + li {
-  margin-top: 6px;
+  margin-top: 5px;
 }
 
 .modal-panel h2 {
