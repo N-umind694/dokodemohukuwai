@@ -138,6 +138,46 @@ body {
   pointer-events: none;
 }
 
+/* 演出中の暖かい光。初日の出のような光だまりが、画面の上をゆっくり漂う */
+#glow {
+  position: fixed;
+  inset: -20%;
+  background:
+    radial-gradient(38% 30% at 32% 28%, rgba(255, 210, 140, 0.32), rgba(255, 210, 140, 0) 70%),
+    radial-gradient(30% 26% at 72% 70%, rgba(255, 170, 110, 0.16), rgba(255, 170, 110, 0) 70%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity 1.6s ease;
+  pointer-events: none;
+}
+
+body.cinema #glow {
+  opacity: 1;
+  animation: glow-drift 10s ease-in-out infinite alternate;
+}
+
+@keyframes glow-drift {
+  from {
+    transform: translate(-5%, -4%);
+  }
+  to {
+    transform: translate(6%, 5%);
+  }
+}
+
+/* カットの切り替わりの幕。濃い紅の暗がりから、ゆっくり明ける */
+#veil {
+  position: fixed;
+  inset: 0;
+  background: #1c0306;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#veil.on {
+  animation: flash var(--fx-time, 0.7s) cubic-bezier(0.3, 0, 0.3, 1) both;
+}
+
 /* 白い閃光。強さは --fx-flash で変える */
 #flash {
   position: fixed;
@@ -191,8 +231,9 @@ body.blind #dim {
   transition: none;
 }
 
+/* 色味は変えない */
 body.cinema #grade {
-  opacity: 0.5;
+  opacity: 0;
 }
 
 body.cinema #vignette {
@@ -243,7 +284,7 @@ body.cinema #letterbox i {
 }
 
 #sheen.on {
-  animation: sheen 0.9s cubic-bezier(0.3, 0, 0.2, 1);
+  animation: sheen 1.8s cubic-bezier(0.45, 0, 0.25, 1);
 }
 
 @keyframes sheen {
