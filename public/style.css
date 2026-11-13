@@ -1,20 +1,20 @@
 :root {
-  /* 背景の茶色 */
-  --bg-light: #8a6658;
-  --bg-mid: #5a3f37;
-  --bg-dark: #2f2320;
+  /* 背景の赤（正月のロゴに合わせる） */
+  --bg-light: #d0262b;
+  --bg-mid: #a3151b;
+  --bg-dark: #5c070c;
   /* 文字とアクセント */
-  --cream: #fbf3e6;
-  --cream-dim: rgba(251, 243, 230, 0.72);
-  --champagne: #ecd3a0;
-  --gold: #f0c869;
-  --peach: #eab893;
-  --cocoa: #33211b;
-  /* すりガラス風の面 */
-  --glass: rgba(34, 23, 20, 0.46);
-  --glass-strong: rgba(26, 17, 15, 0.62);
-  --glass-line: rgba(255, 238, 214, 0.24);
-  --shadow: 0 10px 28px rgba(18, 10, 8, 0.32);
+  --cream: #fff8ec;
+  --cream-dim: rgba(255, 248, 236, 0.8);
+  --champagne: #f7d67e;
+  --gold: #ffd45c;
+  --peach: #ffe2b4;
+  --cocoa: #7a0d12;
+  /* 赤いすりガラス風の面 */
+  --glass: rgba(80, 6, 12, 0.42);
+  --glass-strong: rgba(60, 4, 9, 0.62);
+  --glass-line: rgba(255, 214, 140, 0.42);
+  --shadow: 0 10px 28px rgba(45, 0, 4, 0.35);
   --radius: 14px;
   /* ボタンを画面の下端から持ち上げる量 */
   --lift: 60px;
@@ -24,9 +24,9 @@
   --edge-bottom: calc(env(safe-area-inset-bottom) + 16px);
 
   /* 設定画面（従来のデザインのまま） */
-  --line: #f4efe9;
-  --panel: rgba(52, 36, 32, 0.8);
-  --panel-strong: rgba(40, 28, 25, 0.92);
+  --line: #ffe9b8;
+  --panel: rgba(120, 12, 20, 0.85);
+  --panel-strong: rgba(95, 8, 15, 0.94);
   --rose: #b0756d;
 }
 
@@ -73,12 +73,12 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* 左上から柔らかい光が差す、マットな茶色の背景。細かな粒子と周辺の陰りで質感を出す */
+/* 正月らしい赤の背景。金の青海波（波の柄）を薄く敷き、左上から柔らかい光、周辺に陰り */
 body {
   background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.4 0 0 0 0 0.35 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
-    radial-gradient(120% 90% at 50% 45%, rgba(0, 0, 0, 0) 55%, rgba(12, 7, 5, 0.38) 100%),
-    radial-gradient(90% 55% at 0% 0%, rgba(255, 228, 186, 0.42), rgba(255, 228, 186, 0) 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='24' viewBox='0 0 48 24'%3E%3Cg fill='none' stroke='%23ffd45c' stroke-opacity='0.13' stroke-width='1.2'%3E%3Cpath d='M0 24a24 24 0 0 1 48 0M8 24a16 16 0 0 1 32 0M16 24a8 8 0 0 1 16 0'/%3E%3Cpath d='M-24 12a24 24 0 0 1 48 0M-16 12a16 16 0 0 1 32 0M-8 12a8 8 0 0 1 16 0M24 12a24 24 0 0 1 48 0M32 12a16 16 0 0 1 32 0M40 12a8 8 0 0 1 16 0'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(120% 90% at 50% 45%, rgba(0, 0, 0, 0) 55%, rgba(40, 0, 4, 0.42) 100%),
+    radial-gradient(90% 55% at 0% 0%, rgba(255, 214, 140, 0.32), rgba(255, 214, 140, 0) 70%),
     radial-gradient(130% 95% at 50% 38%, var(--bg-light) 0%, var(--bg-mid) 55%, var(--bg-dark) 100%);
   background-color: var(--bg-mid);
 }
@@ -336,9 +336,9 @@ a.btn {
 
 /* 主な操作：つや消しのシャンパンゴールド */
 .btn-primary {
-  border: 1px solid rgba(255, 248, 232, 0.55);
-  background: linear-gradient(180deg, #f1dcb0 0%, #e4c48c 100%);
-  box-shadow: var(--shadow), inset 0 -2px 0 rgba(120, 80, 40, 0.18);
+  border: 1px solid rgba(255, 250, 220, 0.75);
+  background: linear-gradient(180deg, #ffe593 0%, #f2bd3e 100%);
+  box-shadow: var(--shadow), inset 0 -2px 0 rgba(150, 90, 0, 0.25);
   color: var(--cocoa);
 }
 
@@ -536,12 +536,61 @@ a.btn {
   pointer-events: none;
 }
 
-/* ロゴ画像が決まるまでは文字で出す */
-#title-logo {
-  font-size: clamp(30px, 9vw, 48px);
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-shadow: 0 4px 18px rgba(18, 10, 8, 0.5);
+#title-logo img {
+  display: block;
+  width: min(68vw, 340px, 40vh);
+  height: auto;
+  margin: 0 auto;
+  filter: drop-shadow(0 8px 18px rgba(45, 0, 4, 0.45));
+}
+
+/* 正月の飾り。画面の端に置き、押せないようにする */
+#title-deco {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+#title-deco svg {
+  position: absolute;
+}
+
+.kadomatsu {
+  bottom: calc(var(--edge-bottom) + var(--lift) + 150px);
+  width: clamp(54px, 15vw, 96px);
+  height: auto;
+  aspect-ratio: 1 / 2;
+  filter: drop-shadow(0 6px 10px rgba(45, 0, 4, 0.45));
+}
+
+.kadomatsu-left {
+  left: 6px;
+}
+
+.kadomatsu-right {
+  right: 6px;
+  transform: scaleX(-1);
+}
+
+.ume {
+  top: env(safe-area-inset-top);
+  width: clamp(80px, 24vw, 140px);
+  height: auto;
+  aspect-ratio: 4 / 3;
+  opacity: 0.95;
+}
+
+.ume-left {
+  left: 0;
+}
+
+.ume-right {
+  right: 0;
+  transform: scaleX(-1);
+}
+
+#title-screen > :not(#title-deco) {
+  position: relative;
 }
 
 .title-bottom {
@@ -600,8 +649,8 @@ a.btn {
 
 /* 結果のシート。結果カードの画像と同じ構成で、真ん中の窓から後ろの 3D の完成画を見せる */
 .sheet {
-  --sheet-line: rgba(236, 211, 160, 0.38);
-  --sheet-bg: rgba(30, 21, 18, 0.92);
+  --sheet-line: rgba(247, 214, 126, 0.55);
+  --sheet-bg: rgba(92, 8, 14, 0.94);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -644,11 +693,10 @@ a.btn {
 }
 
 .sheet-logo {
-  color: var(--cream);
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  white-space: nowrap;
+  display: block;
+  height: 52px;
+  width: auto;
+  aspect-ratio: 1;
 }
 
 .sheet-tags {
@@ -677,7 +725,8 @@ a.btn {
   margin: 0;
   padding: 4px 12px;
   border-radius: 999px;
-  background: #c9473d;
+  background: #2b0a0d;
+  border: 1px solid var(--champagne);
   color: var(--cream);
   font-size: 12px;
   font-weight: 800;
@@ -964,7 +1013,7 @@ a.btn {
   padding: 4px 10px 4px 8px;
   border: 1px solid var(--glass-line);
   border-radius: 999px;
-  background: rgba(26, 17, 15, 0.66);
+  background: rgba(70, 6, 12, 0.72);
   color: var(--cream-dim);
   font-size: 11px;
   font-weight: 700;
@@ -1048,7 +1097,8 @@ a.btn {
 }
 
 .btn-blind {
-  border-color: rgba(201, 71, 61, 0.7);
+  border-color: rgba(20, 0, 2, 0.75);
+  background: rgba(30, 2, 6, 0.6);
 }
 
 .btn-text {
@@ -1085,7 +1135,7 @@ a.btn {
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: rgba(20, 14, 12, 0.6);
+  background: rgba(40, 0, 4, 0.6);
 }
 
 .modal-panel {
@@ -1096,8 +1146,42 @@ a.btn {
   padding: 20px 20px 16px;
   border: 3px solid var(--line);
   border-radius: 4px;
-  background: #3e2c27;
+  background: #8c1118;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.modal-panel {
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+/* ポップアップの本文 */
+.modal-text {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.7;
+  text-align: left;
+}
+
+.modal-text small {
+  display: block;
+  margin-top: 8px;
+  color: var(--cream-dim);
+  font-size: 13px;
+}
+
+.modal-list {
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.65;
+  text-align: left;
+}
+
+.modal-list li + li {
+  margin-top: 6px;
 }
 
 .modal-panel h2 {

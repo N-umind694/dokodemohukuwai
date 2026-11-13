@@ -4,19 +4,19 @@ const W = 1200;
 const H = 900;
 const FONT = '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", system-ui, sans-serif';
 const COLORS = {
-  bg: '#2a1e1a',
-  bgLight: '#4a352e',
+  bg: '#5c070c',
+  bgLight: '#b81d24',
   line: 'rgba(236, 211, 160, 0.38)',
-  cream: '#fbf3e6',
+  cream: '#fff8ec',
   creamDim: 'rgba(251, 243, 230, 0.62)',
-  gold: '#f0c869',
-  peach: '#eab893',
+  gold: '#ffd45c',
+  peach: '#ffe2b4',
   barBg: 'rgba(251, 243, 230, 0.12)',
-  blind: '#c9473d',
+  blind: '#2b0a0d',
 };
 const LOGO_URL = './assets/ui/logo.png';
-// ロゴ画像のうち文字のある範囲（透明な余白を除く）
-const LOGO_CROP = { x: 45, y: 117, w: 686, h: 254 };
+// ロゴ画像の範囲（正方形のロゴをそのまま使う）
+const LOGO_CROP = { x: 0, y: 0, w: 768, h: 768 };
 
 let logoPromise = null;
 function loadLogo() {
@@ -50,9 +50,9 @@ export async function createResultCard({ face, result, rows, blind, url }) {
   // 見出し：ロゴと、目隠しモードの印
   let headerRight = 60;
   if (logo) {
-    const h = 92;
+    const h = 120;
     const w = (LOGO_CROP.w / LOGO_CROP.h) * h;
-    g.drawImage(logo, LOGO_CROP.x, LOGO_CROP.y, LOGO_CROP.w, LOGO_CROP.h, 54, 44, w, h);
+    g.drawImage(logo, LOGO_CROP.x, LOGO_CROP.y, LOGO_CROP.w, LOGO_CROP.h, 50, 30, w, h);
     headerRight = 54 + w + 24;
   }
   if (blind) {

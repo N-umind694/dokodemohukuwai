@@ -9,8 +9,9 @@ const VOICE_PEAK = 0.6;
 const VOICE_GAIN_RANGE = [0.7, 2.5];
 // 音源ファイル。どれも Web Audio で鳴らす
 const CLIPS = {
-  kansei: { url: './assets/audio/kansei.mp3', volume: 0.9 },
-  bgm: { url: './assets/audio/bgm.mp3', volume: BGM_VOLUME },
+  // BGM。title は「正月の朝」（タイトル画面・完成演出・結果画面）、play は「正月の激しい鼓動」（プレイ中）
+  bgm_title: { url: './assets/audio/bgm_title.mp3', volume: BGM_VOLUME },
+  bgm_play: { url: './assets/audio/bgm_play.mp3', volume: BGM_VOLUME },
   ...Object.fromEntries(VOICES.map((v, i) => [`voice${i}`, { url: v.file, volume: 1, voice: true }])),
   ...Object.fromEntries(LAND_VOICES.map((v, i) => [`land${i}`, { url: v.file, volume: 1, voice: true }])),
   ...Object.fromEntries(RESULT_ONLY_VOICES.map((v, i) => [`result${i}`, { url: v.file, volume: 1, voice: true }])),
@@ -47,9 +48,10 @@ export class Sound {
     this.ctx = null;
     this.clips = {}; // name → { buffer, start, end, gain }
     this.playing = null; // 再生中の完成 SE { source, gain }
-    this.bgm = null; // 再生中の BGM { source, gain }
+    this.bgm = null; // 再生中の BGM { source, gain, name }
     this.bgmWanted = false; // いまの場面で BGM を流すか
-    this.bgmStartAt = null; // BGM を鳴らし始める時刻（AudioContext の時計）。null ならすぐ
+    this.bgmName = 'title'; // いまの場面で流す BGM（'title' か 'play'）
+    this.bgmOffset = null; // 次に鳴らし始める曲の位置 (秒)。null なら曲の頭から
     this.voice = null; // 再生中の台詞 { source, gain, kind, endsAt }
     this.bags = {}; // まだ鳴らしていない台詞（一巡するまで同じ台詞を出さない）
     // 裏に回ったら音を止め、戻ったら再開する
@@ -206,19 +208,27 @@ export class Sound {
     gain.gain.linearRampToValueAtTime(base, start + duration + 0.4);
   }
 
-  // BGM を流す場面にする。もう流れていればそのまま続ける
-  wantBgm() {
+  // name の BGM を流す場面にする。同じ曲が流れていればそのまま続け、別の曲が流れていれば切り替える
+  wantBgm(name = this.bgmName) {
+    if (this.bgm && this.bgm.name !== name) {
+      fadeOut(this.ctx, this.bgm, 0.8);
+      this.bgm = null;
+    }
+    this.bgmName = name;
+    this.bgmOffset = null;
     this.bgmWanted = true;
     this.updateBgm();
   }
 
-  // BGM を頭からループ再生し直す。at を渡すとその時刻（AudioContext の時計）から鳴らす。
-  // 頭と終わりの無音はループに含めない
-  playBgm({ at = null } = {}) {
-    this.stopBgm(0);
+  // name の BGM を、曲の offset 秒の位置から鳴らし直す（そのあとはループする）。
+  // 鳴らし始めた時刻（AudioContext の時計）を返す。鳴らせないときは null
+  playBgm(name, offset = null) {
+    this.stopBgm(0.05);
+    this.bgmName = name;
+    this.bgmOffset = offset;
     this.bgmWanted = true;
-    this.bgmStartAt = at;
     this.updateBgm();
+    return this.bgm?.startedAt ?? null;
   }
 
   clipDuration(name) {
@@ -234,7 +244,7 @@ export class Sound {
 
   // 場面と設定に合わせて BGM を流す・止める
   updateBgm() {
-    const clip = this.clips.bgm;
+    const clip = this.clips[`bgm_${this.bgmName}`];
     const shouldPlay = this.bgmWanted && this.settings.bgm && clip && this.ctx;
     if (!shouldPlay) {
       if (this.bgm && !this.settings.bgm) {
@@ -244,9 +254,10 @@ export class Sound {
       return;
     }
     if (this.bgm) return;
-    const when = Math.max(this.ctx.currentTime + 0.02, this.bgmStartAt ?? 0);
-    this.bgmStartAt = null;
-    this.bgm = this.startSource(clip, { when, offset: clip.start, loop: true });
+    const when = this.ctx.currentTime + 0.02;
+    const offset = this.bgmOffset ?? clip.start;
+    this.bgmOffset = null;
+    this.bgm = { ...this.startSource(clip, { when, offset, loop: true }), name: this.bgmName, startedAt: when };
   }
 
   play(name, strength = 1) {

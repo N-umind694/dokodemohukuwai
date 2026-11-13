@@ -2,19 +2,23 @@ import * as THREE from '../vendor/three/three.module.min.js';
 
 const deg = THREE.MathUtils.degToRad;
 
-// 完成 SE（assets/audio/kansei.mp3）のカットの区切り (秒)。
-// 1.9 / 1.9 / 1.5 / 0.9 / 1.3 / 1.4 秒の 6 カットに分ける（合計 8.9 秒で、SE は 8.93 秒で終わる）
+// 完成演出は「正月の朝」（assets/audio/bgm_title.mp3）を、曲がいちばん盛り上がる区間の頭から流し、
+// その拍にカットの区切りを合わせる。曲は約 153 BPM で、MUSIC_OFFSET は区間の頭の小節の 1 拍目
+export const MUSIC_OFFSET = 93.139; // 演出で流し始める曲の位置 (秒)
+export const BEAT = 60 / 153.23; // 1 拍の長さ (秒)
+
+// カットの区切り (秒)。4 拍 / 4 拍 / 4 拍 / 1 拍×3 / 4 拍 で切り替え、着地の 3 拍後に称号を出す
 export const CUES = {
   start: 0,
-  cut2: 1.9,
-  hit: 3.8, // 色が戻る一撃
-  cut4: 5.3, // 部位のカットを畳みかける（0.3 秒ずつ）
-  cut4b: 5.6,
-  cut4c: 5.9,
-  rise: 6.2, // 真上へ上がり始める
-  land: 7.5, // 真上の完成画に着地し、評価を出し始める
-  reveal: 8.75, // 締めの一打で称号を出す
-  end: 8.9,
+  cut2: BEAT * 4,
+  hit: BEAT * 8, // 色が戻る一撃（小節の頭）
+  cut4: BEAT * 12, // 部位のカットを畳みかける（1 拍ずつ）
+  cut4b: BEAT * 13,
+  cut4c: BEAT * 14,
+  rise: BEAT * 15, // 真上へ上がり始める
+  land: BEAT * 19, // 真上の完成画に着地し、評価を出し始める
+  reveal: BEAT * 22, // 称号を出す
+  end: BEAT * 23,
 };
 
 // カットごとの色味（R, G, B）。ソフトライトで薄く重ねる
@@ -25,9 +29,6 @@ export const GRADES = {
   gold: '255, 214, 140',
 };
 
-// 拍の間隔と、最初の拍の位置 (秒)。音量の立ち上がりを解析して求めた
-export const BEAT = 0.794;
-const BEAT_OFFSET = 0.015;
 
 // カット割り。各カットは at から次のカットの at まで続き、最後のカットは CUES.land で終わる
 // （CUES.land からの 6 カット目は結果画面の真上の完成画）。
@@ -79,7 +80,7 @@ export function shotAt(time) {
 // 色が戻る一撃までは控えめにし、そこから着地までは強くする
 export function beatPulse(time) {
   if (time < 0 || time >= CUES.land) return 0;
-  const since = (((time - BEAT_OFFSET) % BEAT) + BEAT) % BEAT;
+  const since = ((time % BEAT) + BEAT) % BEAT;
   const amount = time < CUES.hit ? 1.2 : 3;
   return -amount * Math.exp(-since / 0.09);
 }

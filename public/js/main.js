@@ -11,7 +11,7 @@ import { loadSettings, saveSettings, canVibrate, vibrate } from './settings.js';
 import { Sound } from './audio.js';
 import { evaluate, SPECIAL_WART } from './scoring.js';
 import { RESULT_VOICES, SPECIAL_RESULT_VOICES } from './voices.js';
-import { CUES, GRADES, SHOTS, shotAt, shotPoses, beatPulse, handheld } from './finale.js';
+import { CUES, GRADES, SHOTS, MUSIC_OFFSET, shotAt, shotPoses, beatPulse, handheld } from './finale.js';
 
 const deg = THREE.MathUtils.degToRad;
 
@@ -78,6 +78,12 @@ const ui = {
   photo: $('photo-btn'),
   photoInput: $('photo-input'),
   photoStatus: $('photo-status'),
+  noPhoto: $('no-photo'),
+  noPhotoChoose: $('no-photo-choose'),
+  noPhotoPlay: $('no-photo-play'),
+  privacy: $('privacy'),
+  privacyAgree: $('privacy-agree'),
+  privacyBack: $('privacy-back'),
   settingsBtn: $('settings-btn'),
   result: $('result-screen'),
   resultBand: $('result-band'),
@@ -129,6 +135,7 @@ let captureToken = 0;
 let lastTime = 0;
 let swipe = null; // 落とした指の軌跡 { id, part, points: [{ x, y, t }] }
 let paused = false; // プレイ中の一時停止
+let photoFaceReady = false; // 選んだ画像の顔で遊べる状態か
 let viewer = null; // 完成画の拡大表示 { phi, lean, zoom, time, from, closing, pointers, moved, pinch }
 
 // 土台とパーツを、与えた素材で作る（2 回目からは前のものを取り除いて作り直す）
@@ -181,8 +188,29 @@ async function init() {
   ui.start.addEventListener('click', onStart);
   ui.photo.addEventListener('click', () => {
     if (phase !== 'title') return;
+    sound.unlock();
     sound.play('tap');
+    ui.privacy.hidden = false;
+  });
+  // 画像の取り扱いに同意したら、画像を選ぶ画面を開く（押した流れのまま開かないと、スマホで開けないことがある）
+  ui.privacyAgree.addEventListener('click', () => {
+    sound.play('tap');
+    ui.privacy.hidden = true;
     ui.photoInput.click();
+  });
+  ui.privacyBack.addEventListener('click', () => {
+    sound.play('tap');
+    ui.privacy.hidden = true;
+  });
+  ui.noPhotoChoose.addEventListener('click', () => {
+    sound.play('tap');
+    ui.noPhoto.hidden = true;
+    ui.privacy.hidden = false;
+  });
+  ui.noPhotoPlay.addEventListener('click', () => {
+    sound.play('tap');
+    ui.noPhoto.hidden = true;
+    openModeSelect();
   });
   ui.photoInput.addEventListener('change', onPhotoChosen);
   ui.modeNormal.addEventListener('click', () => chooseMode('normal'));
@@ -286,7 +314,7 @@ function titlePose(theta) {
 
 function enterTitle() {
   phase = 'title';
-  sound.wantBgm();
+  sound.wantBgm('title');
   titleTime = 0;
   stage.pose = titlePose(0);
   titleShow.start();
@@ -300,7 +328,7 @@ function updateTitle(dt) {
   titleShow.update(dt);
 }
 
-// 選んだ写真から顔を切り出して、土台とパーツを作り直す
+// 選んだ画像から顔を切り出して、土台とパーツを作り直す
 async function onPhotoChosen() {
   const file = ui.photoInput.files?.[0];
   ui.photoInput.value = '';
@@ -313,12 +341,13 @@ async function onPhotoChosen() {
     if (phase !== 'title') return;
     setupFace(buildAssets(photoFace));
     titleShow.start();
-    setPhotoStatus('写真の顔で遊べます');
+    photoFaceReady = true;
+    setPhotoStatus('選んだ画像の顔で遊べます');
   } catch (err) {
     console.error(err);
     setPhotoStatus(err.message === 'no-face'
-      ? '顔が見つかりませんでした。正面を向いた明るい写真を選んでください'
-      : '写真を読み込めませんでした', true);
+      ? '顔が見つかりませんでした。正面を向いた明るい画像を選んでください'
+      : '画像を読み込めませんでした', true);
   } finally {
     ui.start.disabled = false;
     ui.photo.disabled = false;
@@ -331,9 +360,19 @@ function setPhotoStatus(text, error = false) {
 }
 
 // 通常モードと目隠しモードのどちらで遊ぶか、先に選ばせる
+// 顔の画像をまだ選んでいなければ、先にそのことを知らせる
 function onStart() {
   if (phase !== 'title') return;
   sound.unlock();
+  if (!photoFaceReady) {
+    sound.play('tap');
+    ui.noPhoto.hidden = false;
+    return;
+  }
+  openModeSelect();
+}
+
+function openModeSelect() {
   ui.titleActions.hidden = true;
   ui.modeSelect.hidden = false;
 }
@@ -473,8 +512,8 @@ function startGame() {
   stage.board.visible = !blind;
   document.body.classList.toggle('blind', blind);
   ui.resultMode.hidden = !blind;
-  // タイトルや結果画面から流れている BGM はそのまま続ける
-  sound.wantBgm();
+  // プレイ中は「正月の激しい鼓動」に切り替える（流れていればそのまま続ける）
+  sound.wantBgm('play');
   phase = 'playing';
   spawnNext();
 }
@@ -592,18 +631,18 @@ function startFinale() {
   const result = evaluate(parts, stage.canvasSize);
   finale = {
     time: 0,
-    audioStart: sound.playClip('kansei'),
+    // 「正月の朝」を盛り上がる区間の頭から流し、その再生位置を演出の時計にする
+    audioStart: sound.playBgm('title', MUSIC_OFFSET),
     shot: -1,
     focus,
     result,
     resultPose: measureResultPose(result),
     frozen: null,
   };
-  vibrate(settings, [30, 60, 30]);
 }
 
-// SE が鳴っていれば SE の再生位置を、鳴っていなければ経過時間を演出の時計にする。
-// タブを裏に回して音が止まっている間は、SE の再生位置のまま止める
+// 曲が鳴っていれば曲の再生位置を、鳴っていなければ経過時間を演出の時計にする。
+// タブを裏に回して音が止まっている間は、曲の再生位置のまま止める
 function finaleClock(dt) {
   if (finale.frozen !== null) return finale.frozen;
   if (finale.audioStart !== null) {
@@ -628,14 +667,12 @@ function updateFinale(dt) {
     ui.grade.style.opacity = shot.grade ? '' : '0';
     ui.canvas.classList.toggle('mono', Boolean(shot.mono));
     stage.setUpright(Boolean(shot.upright));
-    // カットの切り替わりで、画面に一瞬ブラーをかけ、白く光らせてカメラを揺らす。強い一撃ではさらに露出を上げる
+    // カットの切り替わりで、画面に一瞬ブラーをかけて白く光らせる。強い一撃ではさらに露出を上げる
     if (index > 0) {
       const effect = shot.impact ? 'punch' : 'cut';
       ui.canvas.classList.remove('punch', 'cut');
       void ui.canvas.offsetWidth; // アニメーションを最初から再生し直す
       ui.canvas.classList.add(effect);
-      stage.shake(shot.impact ? 7 : 4, shot.impact ? 0.4 : 0.3);
-      vibrate(settings, shot.impact ? [50, 30, 30] : 15);
       playFx(ui.flash, { time: shot.impact ? 0.5 : 0.22, flash: shot.impact ? 0.9 : 0.35 });
     }
   }
@@ -661,7 +698,6 @@ function playFx(el, { time, flash } = {}) {
 }
 
 function skipFinale() {
-  sound.stopClip();
   enterResult({ result: finale.result });
 }
 
@@ -685,12 +721,11 @@ function easeInOut(t) {
 }
 
 // 真上から完成品を見せ、評価と保存・リトライを出す。
-// synced のときは SE の締めの一打で称号が出るように数え上げの長さを合わせ、数え上げの音は鳴らさない
+// synced のときは曲の拍で称号が出るように数え上げの長さを合わせ、数え上げの音は鳴らさない
 async function enterResult({ synced = false, result = evaluate(parts, stage.canvasSize) } = {}) {
   phase = 'result';
-  // 評価の画面では BGM を頭から流し直す。完成 SE が鳴っていれば鳴り終わってから
-  const seEnd = synced && finale?.audioStart != null ? finale.audioStart + sound.clipDuration('kansei') : null;
-  sound.playBgm({ at: seEnd });
+  // 評価の画面では、完成演出から流れている「正月の朝」をそのまま続ける
+  sound.wantBgm('title');
   stage.setSpotlight(false);
   stage.setUpright(false);
   ui.canvas.classList.remove('punch', 'cut');
@@ -698,8 +733,7 @@ async function enterResult({ synced = false, result = evaluate(parts, stage.canv
   ui.canvas.classList.remove('mono');
   ui.grade.style.opacity = '';
   if (synced) {
-    // 完成画に着地した瞬間、軽く揺らして光らせ、光の筋を一度だけ走らせる
-    stage.shake(3, 0.35);
+    // 完成画に着地した瞬間、軽く光らせ、光の筋を一度だけ走らせる
     playFx(ui.flash, { time: 0.35, flash: 0.4 });
     ui.sheen.classList.remove('on');
     void ui.sheen.offsetWidth;

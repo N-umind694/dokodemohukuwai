@@ -25,16 +25,17 @@ const SPECIAL_MIN_SCORE = 85;
 // 点数の高い順に並べる。min 点以上で最初に当てはまったものを使う。
 // コメントの \n は改行位置。1 行は狭い画面にも収まるよう 16 文字くらいまでにする
 export const RANKS = [
-  { min: 100, title: '称号（仮）100点', comment: 'コメント（仮）' },
-  { min: 90, title: '称号（仮）90点', comment: 'コメント（仮）' },
-  { min: 70, title: '称号（仮）70点', comment: 'コメント（仮）' },
-  { min: 50, title: '称号（仮）50点', comment: 'コメント（仮）' },
-  { min: 30, title: '称号（仮）30点', comment: 'コメント（仮）' },
-  { min: 0, title: '称号（仮）0点', comment: 'コメント（仮）' },
+  { min: 100, title: '福の神', comment: '完ぺき！\n今年はいいことがありそう' },
+  { min: 90, title: 'ほぼ本人', comment: '言われなければ\n気づかないレベル' },
+  { min: 70, title: 'ちょっと違う人', comment: '惜しい！\nあと少しで元通り' },
+  { min: 50, title: 'よく似た他人', comment: 'どこかで見たような\n知らない人' },
+  { min: 30, title: '味のある顔', comment: 'これはこれで\n縁起がいいかも' },
+  { min: 0, title: '笑う門には福来る', comment: '顔はどこかへ行ったけど\n笑えたなら大成功' },
 ];
+// 使っていない（イボのパーツがあったころの特殊称号）
 export const SPECIAL_WART = {
-  title: '特殊称号（仮）',
-  comment: 'コメント（仮）',
+  title: '',
+  comment: '',
 };
 
 // 回転のずれを 0〜π に直す
