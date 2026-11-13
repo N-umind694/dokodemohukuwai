@@ -78,6 +78,12 @@ const ui = {
   photo: $('photo-btn'),
   photoInput: $('photo-input'),
   photoStatus: $('photo-status'),
+  noPhoto: $('no-photo'),
+  noPhotoChoose: $('no-photo-choose'),
+  noPhotoPlay: $('no-photo-play'),
+  privacy: $('privacy'),
+  privacyAgree: $('privacy-agree'),
+  privacyBack: $('privacy-back'),
   settingsBtn: $('settings-btn'),
   result: $('result-screen'),
   resultBand: $('result-band'),
@@ -129,6 +135,7 @@ let captureToken = 0;
 let lastTime = 0;
 let swipe = null; // 落とした指の軌跡 { id, part, points: [{ x, y, t }] }
 let paused = false; // プレイ中の一時停止
+let photoFaceReady = false; // 選んだ画像の顔で遊べる状態か
 let viewer = null; // 完成画の拡大表示 { phi, lean, zoom, time, from, closing, pointers, moved, pinch }
 
 // 土台とパーツを、与えた素材で作る（2 回目からは前のものを取り除いて作り直す）
@@ -181,8 +188,29 @@ async function init() {
   ui.start.addEventListener('click', onStart);
   ui.photo.addEventListener('click', () => {
     if (phase !== 'title') return;
+    sound.unlock();
     sound.play('tap');
+    ui.privacy.hidden = false;
+  });
+  // 画像の取り扱いに同意したら、画像を選ぶ画面を開く（押した流れのまま開かないと、スマホで開けないことがある）
+  ui.privacyAgree.addEventListener('click', () => {
+    sound.play('tap');
+    ui.privacy.hidden = true;
     ui.photoInput.click();
+  });
+  ui.privacyBack.addEventListener('click', () => {
+    sound.play('tap');
+    ui.privacy.hidden = true;
+  });
+  ui.noPhotoChoose.addEventListener('click', () => {
+    sound.play('tap');
+    ui.noPhoto.hidden = true;
+    ui.privacy.hidden = false;
+  });
+  ui.noPhotoPlay.addEventListener('click', () => {
+    sound.play('tap');
+    ui.noPhoto.hidden = true;
+    openModeSelect();
   });
   ui.photoInput.addEventListener('change', onPhotoChosen);
   ui.modeNormal.addEventListener('click', () => chooseMode('normal'));
@@ -300,7 +328,7 @@ function updateTitle(dt) {
   titleShow.update(dt);
 }
 
-// 選んだ写真から顔を切り出して、土台とパーツを作り直す
+// 選んだ画像から顔を切り出して、土台とパーツを作り直す
 async function onPhotoChosen() {
   const file = ui.photoInput.files?.[0];
   ui.photoInput.value = '';
@@ -313,12 +341,13 @@ async function onPhotoChosen() {
     if (phase !== 'title') return;
     setupFace(buildAssets(photoFace));
     titleShow.start();
-    setPhotoStatus('写真の顔で遊べます');
+    photoFaceReady = true;
+    setPhotoStatus('選んだ画像の顔で遊べます');
   } catch (err) {
     console.error(err);
     setPhotoStatus(err.message === 'no-face'
-      ? '顔が見つかりませんでした。正面を向いた明るい写真を選んでください'
-      : '写真を読み込めませんでした', true);
+      ? '顔が見つかりませんでした。正面を向いた明るい画像を選んでください'
+      : '画像を読み込めませんでした', true);
   } finally {
     ui.start.disabled = false;
     ui.photo.disabled = false;
@@ -331,9 +360,19 @@ function setPhotoStatus(text, error = false) {
 }
 
 // 通常モードと目隠しモードのどちらで遊ぶか、先に選ばせる
+// 顔の画像をまだ選んでいなければ、先にそのことを知らせる
 function onStart() {
   if (phase !== 'title') return;
   sound.unlock();
+  if (!photoFaceReady) {
+    sound.play('tap');
+    ui.noPhoto.hidden = false;
+    return;
+  }
+  openModeSelect();
+}
+
+function openModeSelect() {
   ui.titleActions.hidden = true;
   ui.modeSelect.hidden = false;
 }

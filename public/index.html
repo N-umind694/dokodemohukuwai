@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#3b2a24">
-  <title>どこでも福笑い（仮）</title>
+  <meta name="theme-color" content="#a3151b">
+  <title>いつでもどこでも福笑い</title>
   <!-- 検索エンジンに載せない -->
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="./style.css">
@@ -35,7 +35,14 @@
   <p id="hint" hidden></p>
 
   <section id="title-screen" class="overlay">
-    <h1 id="title-logo">どこでも福笑い（仮）</h1>
+    <!-- 正月の飾り（門松と梅）。押せない飾りなので、ボタンの操作は邪魔しない -->
+    <div id="title-deco" aria-hidden="true">
+      <svg class="kadomatsu kadomatsu-left" viewBox="0 0 100 200"><use href="#kadomatsu"/></svg>
+      <svg class="kadomatsu kadomatsu-right" viewBox="0 0 100 200"><use href="#kadomatsu"/></svg>
+      <svg class="ume ume-left" viewBox="0 0 120 90"><use href="#ume-branch"/></svg>
+      <svg class="ume ume-right" viewBox="0 0 120 90"><use href="#ume-branch"/></svg>
+    </div>
+    <h1 id="title-logo"><img src="./assets/ui/logo.png" alt="いつでもどこでも福笑い"></h1>
     <div class="title-bottom">
       <div id="mode-select" class="actions" hidden>
         <p class="mode-heading">モードを選ぶ</p>
@@ -45,10 +52,10 @@
       </div>
       <div id="title-actions" class="actions">
         <button id="start-btn" class="btn btn-primary btn-main" type="button" disabled>読み込み中…</button>
-        <!-- 写真を選ぶ。スマホではカメラで撮るかアルバムから選ぶかを選べる -->
+        <!-- 顔の画像を選ぶ。スマホではカメラで撮るかアルバムから選ぶかを選べる -->
         <button id="photo-btn" class="btn btn-glass" type="button">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-          <span>写真をえらぶ</span>
+          <span>画像をえらぶ</span>
         </button>
         <input id="photo-input" type="file" accept="image/*" hidden>
         <button id="settings-btn" class="btn btn-glass" type="button">
@@ -56,14 +63,14 @@
           <span>設定</span>
         </button>
       </div>
-      <p id="photo-status" aria-live="polite">写真はこの端末の中だけで使い、どこにも送りません</p>
+      <p id="photo-status" aria-live="polite"></p>
     </div>
   </section>
 
   <section id="result-screen" class="overlay" hidden>
     <div id="result-band" class="sheet" hidden>
       <header class="sheet-head">
-        <span class="sheet-logo">どこでも福笑い（仮）</span>
+        <img class="sheet-logo" src="./assets/ui/logo.png" alt="いつでもどこでも福笑い">
         <span class="sheet-tags">
           <span id="result-mode" hidden>目隠しモード</span>
           <span class="sheet-kind">福笑い評価シート</span>
@@ -111,6 +118,32 @@
     <p id="viewer-hint">スワイプで動かす　タップで戻る</p>
   </div>
 
+  <!-- 画像を選ばずに「はじめる」を押したとき -->
+  <div id="no-photo" class="modal" hidden>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="no-photo-text">
+      <p id="no-photo-text" class="modal-text">画像が選択されていません。顔の画像をアップロードすることでその顔画像で遊ぶことができます。<small>※顔画像を選択しなくても遊ぶことが可能です。</small></p>
+      <button id="no-photo-choose" class="btn-classic" type="button">画像をえらぶ</button>
+      <button id="no-photo-play" class="btn-classic" type="button">このまま遊ぶ</button>
+    </div>
+  </div>
+
+  <!-- 画像の取り扱い。「画像をえらぶ」を押したとき、選ぶ前に毎回出す -->
+  <div id="privacy" class="modal" hidden>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="privacy-heading">
+      <h2 id="privacy-heading">画像の取り扱いについて</h2>
+      <ul class="modal-list">
+        <li>選んだ画像は、この端末のブラウザの中だけで使います。インターネット上のサーバーへ送ったり、保存したりすることはありません。</li>
+        <li>画像は、顔を見つけて眉・目・鼻・口を切り取り、福笑いのパーツと土台を作るためだけに使います。</li>
+        <li>顔を見つける処理には Google の MediaPipe を使っています。このサイトに置いたファイルで端末の中で動くため、画像が Google に送られることはありません。</li>
+        <li>画像は、ページを閉じるか読み込み直すと消えます。端末に残るのは、「画像を保存」を押して自分で保存した画像だけです。</li>
+        <li>このサイトは、アクセス解析や広告の仕組みを使っていません。端末に保存するのは、音などの設定だけです。</li>
+        <li>ほかの人が写っている画像は、その人の許可をもらってから使ってください。</li>
+      </ul>
+      <button id="privacy-agree" class="btn-classic" type="button">同意して画像をえらぶ</button>
+      <button id="privacy-back" class="btn-classic" type="button">戻る</button>
+    </div>
+  </div>
+
   <div id="pause" class="modal" hidden>
     <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="pause-heading">
       <h2 id="pause-heading">一時停止</h2>
@@ -131,5 +164,57 @@
       <button id="settings-close" class="btn-classic" type="button">閉じる</button>
     </div>
   </div>
+  <!-- 飾りの絵（門松と梅の枝） -->
+  <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="take" x1="0" x2="1">
+        <stop offset="0" stop-color="#3f8a3a"/>
+        <stop offset="0.45" stop-color="#7cc25b"/>
+        <stop offset="1" stop-color="#2f6f2c"/>
+      </linearGradient>
+      <linearGradient id="komo" x1="0" x2="1">
+        <stop offset="0" stop-color="#c79a52"/>
+        <stop offset="0.5" stop-color="#ecc985"/>
+        <stop offset="1" stop-color="#b8853f"/>
+      </linearGradient>
+      <symbol id="ume" viewBox="-10 -10 20 20">
+        <g fill="#e8384a">
+          <circle cx="0" cy="-5" r="4.2"/><circle cx="4.8" cy="-1.5" r="4.2"/><circle cx="3" cy="4" r="4.2"/>
+          <circle cx="-3" cy="4" r="4.2"/><circle cx="-4.8" cy="-1.5" r="4.2"/>
+        </g>
+        <circle r="2.6" fill="#ffd45c"/>
+      </symbol>
+      <symbol id="kadomatsu" viewBox="0 0 100 200">
+        <!-- 竹 3 本（斜めに切った切り口） -->
+        <path d="M14 60 L36 44 V150 H14 Z" fill="url(#take)"/>
+        <ellipse cx="25" cy="52" rx="12.5" ry="5" transform="rotate(-36 25 52)" fill="#e9f3c8" stroke="#2f6f2c" stroke-width="1.5"/>
+        <path d="M39 30 L61 14 V150 H39 Z" fill="url(#take)"/>
+        <ellipse cx="50" cy="22" rx="12.5" ry="5" transform="rotate(-36 50 22)" fill="#e9f3c8" stroke="#2f6f2c" stroke-width="1.5"/>
+        <path d="M64 70 L86 54 V150 H64 Z" fill="url(#take)"/>
+        <ellipse cx="75" cy="62" rx="12.5" ry="5" transform="rotate(-36 75 62)" fill="#e9f3c8" stroke="#2f6f2c" stroke-width="1.5"/>
+        <path d="M14 110 H36 M39 100 H61 M64 115 H86" stroke="#2f6f2c" stroke-width="2"/>
+        <!-- 松 -->
+        <g fill="#1f5e2a">
+          <ellipse cx="18" cy="140" rx="18" ry="10"/><ellipse cx="50" cy="134" rx="20" ry="11"/><ellipse cx="82" cy="140" rx="18" ry="10"/>
+        </g>
+        <!-- 梅 -->
+        <use href="#ume" x="18" y="122" width="16" height="16"/>
+        <use href="#ume" x="66" y="126" width="14" height="14"/>
+        <!-- 下のこも巻きと縄 -->
+        <path d="M6 146 H94 L88 198 H12 Z" fill="url(#komo)"/>
+        <path d="M8 162 H92 M10 182 H90" stroke="#7a0d12" stroke-width="5"/>
+        <path d="M8 162 H92 M10 182 H90" stroke="#fff8ec" stroke-width="1.5" stroke-dasharray="4 4"/>
+      </symbol>
+      <symbol id="ume-branch" viewBox="0 0 120 90">
+        <path d="M0 18 C30 22 52 40 70 62 S100 86 118 88 M38 30 C46 18 56 12 70 10" fill="none" stroke="#4a1a10" stroke-width="4" stroke-linecap="round"/>
+        <use href="#ume" x="22" y="6" width="22" height="22"/>
+        <use href="#ume" x="60" y="0" width="18" height="18"/>
+        <use href="#ume" x="62" y="46" width="24" height="24"/>
+        <use href="#ume" x="96" y="70" width="16" height="16"/>
+        <circle cx="50" cy="40" r="3.5" fill="#f7a3ad"/>
+        <circle cx="88" cy="70" r="3" fill="#f7a3ad"/>
+      </symbol>
+    </defs>
+  </svg>
 </body>
 </html>
