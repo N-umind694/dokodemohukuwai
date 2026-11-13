@@ -538,7 +538,7 @@ a.btn {
 
 #title-logo img {
   display: block;
-  width: min(68vw, 340px, 40vh);
+  width: min(56vw, 270px, 30vh);
   height: auto;
   margin: 0 auto;
   filter: drop-shadow(0 8px 18px rgba(45, 0, 4, 0.45));
@@ -556,28 +556,29 @@ a.btn {
 }
 
 .kadomatsu {
-  bottom: calc(var(--edge-bottom) + var(--lift) + 150px);
-  width: clamp(54px, 15vw, 96px);
+  /* 大きく置き、左右と下は画面の外へはみ出させる。ボタンの後ろに回る */
+  bottom: -36px;
+  width: clamp(150px, 42vw, 250px);
   height: auto;
   aspect-ratio: 1 / 2;
   filter: drop-shadow(0 6px 10px rgba(45, 0, 4, 0.45));
 }
 
 .kadomatsu-left {
-  left: 6px;
+  left: -40px;
 }
 
 .kadomatsu-right {
-  right: 6px;
+  right: -40px;
   transform: scaleX(-1);
 }
 
 .ume {
   top: env(safe-area-inset-top);
-  width: clamp(80px, 24vw, 140px);
+  width: clamp(64px, 18vw, 110px);
   height: auto;
   aspect-ratio: 4 / 3;
-  opacity: 0.95;
+  opacity: 0.9;
 }
 
 .ume-left {
@@ -591,6 +592,11 @@ a.btn {
 
 #title-screen > :not(#title-deco) {
   position: relative;
+}
+
+/* ロゴを上に寄せる */
+#title-screen {
+  padding-top: calc(env(safe-area-inset-top) + 10px);
 }
 
 .title-bottom {
@@ -1151,8 +1157,29 @@ a.btn {
 }
 
 .modal-panel {
-  max-height: calc(100vh - 32px);
+  /* iPhone の 100vh はアドレスバーの分だけ大きいので、見えている高さ（dvh）に収める */
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow: hidden;
+}
+
+/* 長い本文はここだけ流れるようにし、ボタンは常に見えるようにする */
+.modal-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#privacy .modal-panel h2 {
+  font-size: 19px;
+}
+
+#privacy .btn-classic,
+#no-photo .btn-classic {
+  margin-top: 10px;
+  padding: 10px;
+  font-size: 16px;
 }
 
 /* ポップアップの本文 */
@@ -1174,14 +1201,14 @@ a.btn {
 .modal-list {
   margin: 0;
   padding-left: 1.2em;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  line-height: 1.65;
+  line-height: 1.55;
   text-align: left;
 }
 
 .modal-list li + li {
-  margin-top: 6px;
+  margin-top: 5px;
 }
 
 .modal-panel h2 {
