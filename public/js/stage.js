@@ -322,6 +322,13 @@ export class Stage {
       this.camera.position.add(offset);
       target.add(offset);
     }
+    // inBoard のカメラ位置は土台に対する位置。土台を立てていれば、立てた土台に対して同じように見る
+    if (pose.inBoard) {
+      const m = this.world.matrixWorld;
+      this.camera.position.applyMatrix4(m);
+      target.applyMatrix4(m);
+      this.camera.up.transformDirection(m);
+    }
     this.camera.lookAt(target);
     if (pose.roll) this.camera.rotateZ(pose.roll);
     const fov = pose.fov ?? FOV;

@@ -626,6 +626,8 @@ function updatePlay(dt) {
 // 完成 SE の拍に合わせてカメラを切り替え、最後は真上の完成画に降りて評価を出す
 function startFinale() {
   phase = 'finale';
+  // 完成した土台を、ひな壇に立てかけて飾る（評価の画面で座卓の上に戻す）
+  stage.setUpright(true);
   // 目隠しモードで隠していた土台とパーツをここで見せる
   stage.board.visible = true;
   document.body.classList.remove('blind');
@@ -673,7 +675,7 @@ function updateFinale(dt) {
   const { from, to } = shotPoses(shot, finale.focus, finale.resultPose);
   if (index !== finale.shot) {
     finale.shot = index;
-    stage.setUpright(Boolean(shot.upright));
+    // 演出の間はずっと、土台をひな壇に立てかけておく
     // カットの切り替わりは、暗がりから静かに明けるように溶け込ませる
     if (index > 0) playFx(ui.veil, { time: 0.7, flash: 0.6 });
   }
@@ -682,9 +684,11 @@ function updateFinale(dt) {
   const last = index === SHOTS.length - 1;
   pose.roll += handheld(time) * (last ? 1 - progress : 1);
   pose.upright = Boolean(shot.upright);
+  // upright のカット以外は、立てかけた土台に対するカメラ位置として扱う
+  pose.inBoard = !shot.upright;
   stage.pose = pose;
   // カメラが狙っている所を照らす。寄るほど光を小さくする
-  const center = stage.toBoard(pose.tx, pose.ty, pose.tz);
+  const center = pose.inBoard ? { x: pose.tx, z: pose.tz } : stage.toBoard(pose.tx, pose.ty, pose.tz);
   stage.setSpotlight(true, center, pose.r * 0.4 + 0.3);
 }
 
