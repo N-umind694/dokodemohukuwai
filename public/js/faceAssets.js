@@ -184,9 +184,13 @@ export async function makePhotoFace(file) {
   // 顔が土台の真ん中に、土台の高さの 6 割ほどで収まるように切り出す
   const oval = FACE_OVAL.map((i) => face[i]);
   const fb = bounds(oval);
-  const scale = (CANVAS.h * 0.6) / fb.h;
-  const cx = fb.x + fb.w / 2;
-  const cy = fb.y + fb.h / 2;
+  // ただし写真が土台いっぱいを必ず覆うように、縮めすぎず、切り出す範囲を写真の内側に収める
+  // （写真の外が土台に入って、何もない所ができないようにする）
+  const scale = Math.max((CANVAS.h * 0.6) / fb.h, CANVAS.w / photo.width, CANVAS.h / photo.height);
+  const halfW = CANVAS.w / 2 / scale;
+  const halfH = CANVAS.h / 2 / scale;
+  const cx = clampTo(fb.x + fb.w / 2, halfW, photo.width - halfW);
+  const cy = clampTo(fb.y + fb.h / 2, halfH, photo.height - halfH);
   const toBase = (p) => ({ x: (p.x - cx) * scale + CANVAS.w / 2, y: (p.y - cy) * scale + CANVAS.h * 0.5 });
 
   const photoBase = newCanvas(CANVAS.w, CANVAS.h);
@@ -333,6 +337,10 @@ function fillHoles(source, holes) {
 }
 
 // ---- 図形の小道具 ----
+
+function clampTo(v, lo, hi) {
+  return lo > hi ? (lo + hi) / 2 : Math.min(Math.max(v, lo), hi);
+}
 
 function newCanvas(w, h) {
   const canvas = document.createElement('canvas');
