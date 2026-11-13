@@ -1344,3 +1344,19 @@ a.btn {
   outline: 2px solid #fff;
   outline-offset: 2px;
 }
+
+/* 場面を切り替えるときの暗転。いちばん手前に重ね、暗い間は押せないようにする */
+#fade {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #000;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+#fade.on {
+  opacity: 1;
+  pointer-events: auto;
+}

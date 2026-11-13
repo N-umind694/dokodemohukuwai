@@ -19,10 +19,13 @@ export function renderFace(stage, scale) {
   camera.position.set(0, 50, 0);
   camera.lookAt(0, 0, 0);
 
-  // 着地の波紋は写さない
+  // 着地の波紋は写さない。ひな壇に立てかけていても、寝かせた状態で真上から撮る
+  const upright = stage.upright;
+  if (upright) stage.setUpright(false);
   for (const ring of stage.effects) ring.visible = false;
   renderer.render(stage.scene, camera);
   for (const ring of stage.effects) ring.visible = true;
+  if (upright) stage.setUpright(true);
 
   // WebGL の canvas は捨てるので、2D の canvas に写しておく
   const out = document.createElement('canvas');

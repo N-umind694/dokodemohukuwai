@@ -7,18 +7,19 @@ const deg = THREE.MathUtils.degToRad;
 export const MUSIC_OFFSET = 93.139; // 演出で流し始める曲の位置 (秒)
 export const BEAT = 60 / 153.23; // 1 拍の長さ (秒)
 
-// カットの区切り (秒)。4 拍 / 4 拍 / 4 拍 / 1 拍×3 / 4 拍 で切り替え、着地の 3 拍後に称号を出す
+// カットの区切り (秒)。ゆっくり見せるため 8 拍 / 8 拍 / 8 拍 / 2 拍×3 / 8 拍 で切り替え、
+// 着地の 3 拍後に称号を出す（スキップできるので長めでよい）
 export const CUES = {
   start: 0,
-  cut2: BEAT * 4,
-  hit: BEAT * 8, // 3 カット目（小節の頭）
-  cut4: BEAT * 12, // 部位のカットを畳みかける（1 拍ずつ）
-  cut4b: BEAT * 13,
-  cut4c: BEAT * 14,
-  rise: BEAT * 15, // 真上へ上がり始める
-  land: BEAT * 19, // 真上の完成画に着地し、評価を出し始める
-  reveal: BEAT * 22, // 称号を出す
-  end: BEAT * 23,
+  cut2: BEAT * 8,
+  hit: BEAT * 16, // 3 カット目（小節の頭）
+  cut4: BEAT * 24, // 部位を順に見せる（2 拍ずつ）
+  cut4b: BEAT * 26,
+  cut4c: BEAT * 28,
+  rise: BEAT * 30, // 正面へ引き始める
+  land: BEAT * 38, // 完成画に着地し、評価を出し始める
+  reveal: BEAT * 41, // 称号を出す
+  end: BEAT * 42,
 };
 
 // カット割り。各カットは at から次のカットの at まで続き、最後のカットは CUES.land で終わる
@@ -35,9 +36,9 @@ export const SHOTS = [
   { at: CUES.start, focus: 'face', upright: true, ease: 'inOut', from: { tx: -1.7, ty: 1.2, tz: 2.8, r: 3.4, phi: deg(100), theta: deg(-22), roll: 0.06, fov: 70 }, to: { tx: 0, ty: 2.6, tz: 2.3, r: 14, phi: deg(98), theta: deg(10), roll: 0, fov: 50 } },
   // 2: 真上から 60° 回りながら、減速しつつ土台へ寄り、画面の上で 10° 傾いた（まっすぐではない）角度で止まる
   { at: CUES.cut2, focus: 'face', ease: 'decel', from: { r: 19, phi: deg(2), theta: deg(-70), fov: 44 }, to: { r: 12.5, phi: deg(4), theta: deg(-10), fov: 42 } },
-  // 3: 土台の上の辺の側（おでこ側）から真上を通り、下の辺の側（あご側）へ弧を描いて回り込む。
+  // 3: 土台の上の辺の側（おでこ側）から弧を描いて下り、正面で止まる（ひな壇の下までは回り込まない）。
   //    phi が負の値は上の辺の側から見る向き（画面の上下はそのまま）
-  { at: CUES.hit, focus: 'face', ease: 'decel', from: { r: 16, phi: deg(-58), theta: 0, fov: 50 }, to: { r: 13.5, phi: deg(58), theta: 0, fov: 48 } },
+  { at: CUES.hit, focus: 'face', ease: 'decel', from: { r: 16, phi: deg(-58), theta: 0, fov: 50 }, to: { r: 13.5, phi: 0, theta: 0, fov: 48 } },
   // 4: 部位を順に、ゆっくり寄りながら見せる
   { at: CUES.cut4, focus: 'eye_left', focusTo: 'eye_right', from: { r: 2.6, phi: deg(68), theta: deg(-40), roll: 0.1 }, to: { r: 1.7, theta: deg(-15), roll: 0.02 } },
   { at: CUES.cut4b, focus: 'nose', focusTo: 'mouth', from: { r: 2.6, phi: deg(62), theta: deg(30), roll: -0.1 }, to: { r: 1.6, theta: deg(40), roll: -0.02 } },
