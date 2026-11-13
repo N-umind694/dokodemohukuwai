@@ -34,7 +34,7 @@ const SHAKE_TIME = 0.18;
 const SHAKE_RATIO = 0.004; // 揺れ幅（カメラ距離に対する割合）
 
 export class Stage {
-  constructor(canvasEl, canvasSize) {
+  constructor(canvasEl, canvasSize, roomImages) {
     this.canvasSize = canvasSize;
     this.boardW = canvasSize.w * PX;
     this.boardD = canvasSize.h * PX;
@@ -59,7 +59,8 @@ export class Stage {
     this.rig.add(this.world);
     this.scene.add(this.rig);
     // 正月の和室。土台は部屋の真ん中の座卓の上に置く
-    this.room = buildRoom();
+    this.room = buildRoom(roomImages);
+    this.roomImages = roomImages;
     this.scene.add(this.room.group);
     this.initStand();
 
@@ -190,7 +191,7 @@ export class Stage {
   initStand() {
     // 立てた土台は、赤い毛氈のひな壇のいちばん上の段に飾る。stand の y は段の上面の高さ（setUpright で合わせる）
     const floorY = -BOARD_THICKNESS * Math.cos(STAND.angle);
-    const floor = buildHinadan(0, ROOM_FLOOR_Y - floorY, this.boardD / 2 + 1.2);
+    const floor = buildHinadan(0, ROOM_FLOOR_Y - floorY, this.boardD / 2 + 1.2, this.roomImages);
 
     // 接地影：中心ほど濃い楕円をぼかした画像
     const canvas = document.createElement('canvas');

@@ -1,4 +1,5 @@
-// 正月の和室（昭和の家）の 3D 背景。箱と板だけで組み、模様は canvas で描く（画像ファイルは使わない）。
+// 正月の和室（昭和の家）の 3D 背景。箱と板だけで組み、表面には assets/room/ の素材写真を貼る。
+// 素材は継ぎ目が出ないよう、畳は 1 畳ずつ、天井は板ごとに描き分け、壁や布は端をなじませた画像を繰り返す。
 // 土台は部屋の真ん中の座卓の上に置く。座標は土台の上面の中心が原点で、y が上
 import * as THREE from '../vendor/three/three.module.min.js';
 
@@ -20,9 +21,21 @@ const COLOR = {
 export const ROOM_FLOOR_Y = FLOOR_Y;
 
 // 部屋をまるごと作る。table は座卓（土台を立てる場面では隠す）、hinadan はひな壇（土台を立てる場面だけ出す）
-export function buildRoom() {
+// 部屋の素材写真を読み込む。ページを開いたときに読み込んでおく
+const TEXTURE_NAMES = ['tatami', 'wood', 'shoji', 'plaster', 'fence', 'felt', 'outerwall', 'hinabamboo', 'bluecloth'];
+export async function loadRoomTextures() {
+  const entries = await Promise.all(TEXTURE_NAMES.map(async (name) => {
+    const img = new Image();
+    img.src = new URL(`../assets/room/${name}.jpg`, import.meta.url).href;
+    await img.decode();
+    return [name, img];
+  }));
+  return Object.fromEntries(entries);
+}
+
+export function buildRoom(images) {
   const group = new THREE.Group();
-  const mats = makeMaterials();
+  const mats = makeMaterials(images);
   const hw = ROOM.w / 2;
   const hd = ROOM.d / 2;
   const cy = FLOOR_Y + ROOM.h;
@@ -80,9 +93,13 @@ export function buildRoom() {
 
 // ひな壇：赤い毛氈を掛けた 3 段。いちばん上の段（高さ topY）に土台を立て、段は手前（+z）に向かって
 // floorY まで下がる。frontZ は上の段の手前の端
-export function buildHinadan(topY, floorY, frontZ) {
+export function buildHinadan(topY, floorY, frontZ, images) {
   const group = new THREE.Group();
-  const felt = new THREE.MeshStandardMaterial({ color: COLOR.felt, roughness: 1 });
+  const feltMap = repeatTexture(images.felt, 4, 4);
+  const felt = new THREE.MeshStandardMaterial({ map: feltMap, roughness: 1 });
+  const side = new THREE.MeshStandardMaterial({ map: repeatTexture(images.hinabamboo, 2, 2), roughness: 0.9 });
+  // 箱の面の順：+x, -x, +y, -y, +z, -z。上と手前は毛氈、横と奥はひな壇の木地
+  const faces = [side, side, felt, side, felt, side];
   const steps = 3;
   const rise = (topY - floorY) / steps;
   const back = frontZ - 7; // どの段も奥の端はそろえる
@@ -90,7 +107,7 @@ export function buildHinadan(topY, floorY, frontZ) {
     const y = topY - rise * i; // その段の上面
     const front = frontZ + i * 3.2;
     const w = 15 + i * 3;
-    group.add(box(w, y - floorY, front - back, felt, [0, (y + floorY) / 2, (front + back) / 2]));
+    group.add(box(w, y - floorY, front - back, faces, [0, (y + floorY) / 2, (front + back) / 2]));
   }
   return group;
 }
@@ -106,6 +123,14 @@ function plane(w, h, material, pos, rot) {
 
 // 部屋の内側を向く壁。rotY は壁の向き（0 で +z を向く＝奥の壁）
 function wall(w, h, material, pos, rotY) {
+  // 繰り返す素材は、壁の大きさに合わせて繰り返す回数を決める（同じ素材でも壁ごとに複製する）
+  if (material.userData.unit) {
+    const m = material.clone();
+    m.map = material.map.clone();
+    m.map.needsUpdate = true;
+    m.map.repeat.set(w / material.userData.unit, h / material.userData.unit);
+    material = m;
+  }
   return plane(w, h, material, pos, [0, rotY, 0]);
 }
 
@@ -154,23 +179,41 @@ function kagamiMochi([x, y, z]) {
   return g;
 }
 
-// ---- 模様（canvas） ----
+// ---- 素材 ----
 
-function makeMaterials() {
-  const std = (map, extra = {}) => new THREE.MeshStandardMaterial({ map, roughness: 0.95, ...extra });
-  const basic = (map) => new THREE.MeshBasicMaterial({ map });
+function makeMaterials(images) {
+  const std = (map, extra = {}) => new THREE.MeshStandardMaterial({ map, roughness: 0.9, ...extra });
+  const plaster = std(repeatTexture(images.plaster, 1, 1));
+  plaster.userData.unit = 16; // 土壁の写真 1 枚を 16 × 16 の広さに貼る
+  const woodMap = srgb(new THREE.Texture(images.wood));
   return {
-    tatami: std(tatamiTexture()),
-    ceiling: std(woodTexture('#5b3a24', '#4a2e1c', 8), { side: THREE.FrontSide }),
-    plaster: std(plasterTexture()),
-    fusuma: std(fusumaTexture()),
-    shoji: basic(shojiTexture()),
-    garden: basic(gardenTexture()),
+    tatami: std(tatamiTexture(images.tatami)),
+    ceiling: std(ceilingTexture(images.wood)),
+    plaster,
+    fusuma: std(fusumaTexture(images)),
+    shoji: new THREE.MeshBasicMaterial({ map: shojiTexture(images) }),
+    garden: new THREE.MeshBasicMaterial({ map: gardenTexture(images) }),
     scroll: std(scrollTexture(), { roughness: 0.8 }),
-    wood: new THREE.MeshStandardMaterial({ color: COLOR.wood, roughness: 0.7 }),
-    woodLight: new THREE.MeshStandardMaterial({ color: COLOR.woodLight, roughness: 0.7 }),
-    table: std(woodTexture('#3d2416', '#2c190f', 14), { roughness: 0.45 }),
+    wood: std(woodMap, { roughness: 0.7 }),
+    woodLight: std(woodMap, { roughness: 0.7, color: 0xc9a080 }),
+    table: std(woodMap, { roughness: 0.45 }),
   };
+}
+
+function srgb(texture) {
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+// 端をなじませた素材を repeatX × repeatY 回繰り返して貼る
+function repeatTexture(image, repeatX, repeatY) {
+  const texture = srgb(new THREE.Texture(image));
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(repeatX, repeatY);
+  return texture;
 }
 
 function canvasTexture(w, h, draw) {
@@ -178,100 +221,62 @@ function canvasTexture(w, h, draw) {
   canvas.width = w;
   canvas.height = h;
   draw(canvas.getContext('2d'), w, h);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 4;
-  return texture;
+  return srgb(new THREE.CanvasTexture(canvas));
 }
 
-// 畳：部屋の広さ（48 × 40）に、半畳ずらしで畳を敷いた模様
-function tatamiTexture() {
-  return canvasTexture(1200, 1000, (g, w, h) => {
-    const s = w / ROOM.w; // 1 単位あたりの px
-    const mw = 10.8 * s; // 畳の短い辺
-    const ml = 21.6 * s; // 長い辺
-    g.fillStyle = '#bfae6a';
-    g.fillRect(0, 0, w, h);
-    const mat = (x, y, ww, hh, vertical) => {
-      const grad = g.createLinearGradient(x, y, x + ww, y + hh);
-      grad.addColorStop(0, '#c9b874');
-      grad.addColorStop(1, '#b6a35d');
-      g.fillStyle = grad;
-      g.fillRect(x, y, ww, hh);
-      g.strokeStyle = 'rgba(90, 80, 30, 0.18)';
-      g.lineWidth = 1;
-      for (let k = 2; k < (vertical ? ww : hh); k += 4) {
-        g.beginPath();
-        if (vertical) {
-          g.moveTo(x + k, y);
-          g.lineTo(x + k, y + hh);
-        } else {
-          g.moveTo(x, y + k);
-          g.lineTo(x + ww, y + k);
-        }
-        g.stroke();
+// 畳（縁なし）：半畳の正方形を、目の向きを互い違いにして敷く（市松敷き）。1 畳ずつ写真を 1 枚使うので継ぎ目が出ない
+function tatamiTexture(img) {
+  return canvasTexture(1536, 1280, (g, w, h) => {
+    const s = w / ROOM.w;
+    const size = 10.8 * s;
+    let k = 0;
+    for (let y = 0; y < h; y += size) {
+      for (let x = 0; x < w; x += size) {
+        g.save();
+        g.translate(x + size / 2, y + size / 2);
+        if ((Math.round(x / size) + Math.round(y / size)) % 2) g.rotate(Math.PI / 2);
+        g.drawImage(img, -size / 2, -size / 2, size, size);
+        // 畳ごとにわずかに色が違う
+        g.fillStyle = k++ % 3 === 0 ? 'rgba(255, 245, 200, 0.06)' : 'rgba(60, 40, 0, 0.05)';
+        g.fillRect(-size / 2, -size / 2, size, size);
+        g.restore();
+        // 畳と畳の間の細い影
+        g.fillStyle = 'rgba(40, 30, 10, 0.35)';
+        g.fillRect(x, y, size, 1.5);
+        g.fillRect(x, y, 1.5, size);
       }
-      // 畳の縁（へり）は長い辺に付く
-      g.fillStyle = '#1d2433';
-      const b = 0.7 * s;
-      if (vertical) {
-        g.fillRect(x, y, ww, b);
-        g.fillRect(x, y + hh - b, ww, b);
-      } else {
-        g.fillRect(x, y, b, hh);
-        g.fillRect(x + ww - b, y, b, hh);
+    }
+  });
+}
+
+// 天井：木目の写真から帯を切り出して板として並べる。板の継ぎ目が区切りになるので、繰り返しが目立たない
+function ceilingTexture(img) {
+  return canvasTexture(1536, 1280, (g, w, h) => {
+    const plank = 2.4 * (w / ROOM.w);
+    for (let y = 0, i = 0; y < h; y += plank, i++) {
+      const sy = ((i * 97) % Math.max(1, img.height - 60));
+      const flip = i % 2;
+      g.save();
+      if (flip) {
+        g.translate(w, 0);
+        g.scale(-1, 1);
       }
-    };
-    for (let y = 0; y < h; y += mw) {
-      const shift = (Math.round(y / mw) % 2) * (ml / 2);
-      for (let x = -shift; x < w; x += ml) mat(x, y, ml, mw, false);
+      g.drawImage(img, 0, sy, img.width, 60, 0, y, w, plank);
+      g.restore();
+      g.fillStyle = 'rgba(10, 5, 0, 0.55)';
+      g.fillRect(0, y, w, 2);
     }
   });
 }
 
-function woodTexture(base, line, count) {
-  return canvasTexture(512, 512, (g, w, h) => {
-    g.fillStyle = base;
+// 襖：青灰色の布張りを 4 枚、黒い縁と引き手
+function fusumaTexture(images) {
+  return canvasTexture(1536, 900, (g, w, h) => {
+    const pattern = g.createPattern(images.bluecloth, 'repeat');
+    g.fillStyle = pattern;
     g.fillRect(0, 0, w, h);
-    g.strokeStyle = line;
-    for (let i = 0; i < count * 6; i++) {
-      g.globalAlpha = 0.15 + Math.random() * 0.25;
-      g.lineWidth = 1 + Math.random() * 2;
-      const y = Math.random() * h;
-      g.beginPath();
-      g.moveTo(0, y);
-      for (let x = 0; x <= w; x += 32) g.lineTo(x, y + Math.sin(x / 70 + i) * 4);
-      g.stroke();
-    }
-    g.globalAlpha = 1;
-  });
-}
-
-function plasterTexture() {
-  return canvasTexture(512, 512, (g, w, h) => {
-    g.fillStyle = COLOR.plaster;
-    g.fillRect(0, 0, w, h);
-    for (let i = 0; i < 9000; i++) {
-      g.fillStyle = Math.random() < 0.5 ? 'rgba(120, 85, 45, 0.08)' : 'rgba(255, 240, 210, 0.08)';
-      g.fillRect(Math.random() * w, Math.random() * h, 2, 2);
-    }
-  });
-}
-
-function fusumaTexture() {
-  return canvasTexture(1024, 600, (g, w, h) => {
-    g.fillStyle = '#e8dcc0';
-    g.fillRect(0, 0, w, h);
-    // 金の雲の模様
-    g.fillStyle = 'rgba(214, 170, 70, 0.35)';
-    for (const [x, y, r] of [[160, 140, 70], [230, 150, 55], [700, 420, 80], [790, 410, 60], [480, 260, 50]]) {
-      g.beginPath();
-      g.ellipse(x, y, r * 1.8, r * 0.6, 0, 0, Math.PI * 2);
-      g.fill();
-    }
-    // 襖 4 枚の枠と引き手
-    g.strokeStyle = '#2c190f';
-    g.lineWidth = 10;
+    g.strokeStyle = '#1c120c';
+    g.lineWidth = 16;
     for (let i = 0; i <= 4; i++) {
       g.beginPath();
       g.moveTo((w / 4) * i, 0);
@@ -279,77 +284,78 @@ function fusumaTexture() {
       g.stroke();
     }
     g.strokeRect(0, 0, w, h);
-    g.fillStyle = '#2c190f';
+    g.fillStyle = '#1c120c';
     for (let i = 0; i < 4; i++) {
       g.beginPath();
-      g.arc((w / 4) * i + (i % 2 ? 26 : w / 4 - 26), h * 0.5, 8, 0, Math.PI * 2);
+      g.ellipse((w / 4) * i + (i % 2 ? 40 : w / 4 - 40), h * 0.5, 10, 16, 0, 0, Math.PI * 2);
       g.fill();
     }
   });
 }
 
-function shojiTexture() {
-  return canvasTexture(256, 512, (g, w, h) => {
-    const grad = g.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, '#fffaf0');
-    grad.addColorStop(1, '#f1e6d2');
-    g.fillStyle = grad;
-    g.fillRect(0, 0, w, h);
-    g.strokeStyle = '#5a3a24';
-    g.lineWidth = 4;
-    for (let x = 0; x <= w; x += w / 4) {
-      g.beginPath();
-      g.moveTo(x, 0);
-      g.lineTo(x, h);
-      g.stroke();
-    }
-    for (let y = 0; y <= h * 0.82; y += h / 12) {
-      g.beginPath();
-      g.moveTo(0, y);
-      g.lineTo(w, y);
-      g.stroke();
-    }
-    // 下は腰板
-    g.fillStyle = '#5a3a24';
-    g.fillRect(0, h * 0.82, w, h * 0.18);
-    g.lineWidth = 12;
-    g.strokeRect(0, 0, w, h);
+// 障子：格子の写真を格子の線の位置で縦につなぎ、外枠と下の腰板を付ける
+function shojiTexture(images) {
+  const img = images.shoji;
+  return canvasTexture(320, 1024, (g, w, h) => {
+    const frame = 14;
+    const koshi = h * 0.16;
+    const innerW = w - frame * 2;
+    const tileH = img.height * (innerW / img.width);
+    for (let y = frame; y < h - koshi; y += tileH) g.drawImage(img, frame, y, innerW, tileH);
+    g.fillStyle = '#9a6538';
+    g.fillRect(0, 0, w, frame);
+    g.fillRect(0, 0, frame, h);
+    g.fillRect(w - frame, 0, frame, h);
+    // 腰板（木目）
+    g.drawImage(images.wood, 0, 0, images.wood.width, images.wood.height * 0.3, 0, h - koshi, w, koshi);
+    g.fillRect(0, h - koshi - frame / 2, w, frame);
+    g.fillRect(0, h - frame, w, frame);
   });
 }
 
-function gardenTexture() {
-  return canvasTexture(1024, 512, (g, w, h) => {
+// 庭：竹の外柵と外壁を背に、木々の緑と苔の地面
+function gardenTexture(images) {
+  return canvasTexture(2048, 640, (g, w, h) => {
     const sky = g.createLinearGradient(0, 0, 0, h);
-    sky.addColorStop(0, '#dfeedc');
-    sky.addColorStop(0.6, '#9cc28a');
-    sky.addColorStop(1, '#5d8a4c');
+    sky.addColorStop(0, '#e6efe0');
+    sky.addColorStop(1, '#9cbf8a');
     g.fillStyle = sky;
     g.fillRect(0, 0, w, h);
-    // 竹垣
-    g.fillStyle = '#6b5a3c';
-    g.fillRect(0, h * 0.55, w, h * 0.3);
-    g.strokeStyle = 'rgba(40, 30, 15, 0.5)';
-    for (let x = 0; x < w; x += 12) {
-      g.beginPath();
-      g.moveTo(x, h * 0.55);
-      g.lineTo(x, h * 0.85);
-      g.stroke();
+    // 竹の外柵（横に繰り返す）と、その下の外壁（左右反転しながら並べる）
+    const fenceTop = h * 0.32;
+    const fenceH = h * 0.4;
+    const fw = images.fence.width * (fenceH / images.fence.height);
+    for (let x = 0; x < w; x += fw) g.drawImage(images.fence, x, fenceTop, fw, fenceH);
+    const wallTop = fenceTop + fenceH;
+    const wallH = h * 0.14;
+    const ow = images.outerwall.width * (wallH / (images.outerwall.height * 0.4));
+    for (let x = 0, i = 0; x < w; x += ow, i++) {
+      g.save();
+      if (i % 2) {
+        g.translate(x * 2 + ow, 0);
+        g.scale(-1, 1);
+      }
+      g.drawImage(images.outerwall, 0, 0, images.outerwall.width, images.outerwall.height * 0.4, x, wallTop, ow, wallH);
+      g.restore();
     }
-    // 木の葉（ぼかした丸）
-    g.filter = 'blur(6px)';
-    for (let i = 0; i < 260; i++) {
-      const greens = ['#3f7a3a', '#5c9a45', '#2e5f2c', '#7fb35a'];
+    // 木々の緑（ぼかした葉の重なり）
+    g.filter = 'blur(5px)';
+    const greens = ['#3f7a3a', '#5c9a45', '#2e5f2c', '#7fb35a'];
+    for (let i = 0; i < 320; i++) {
       g.fillStyle = greens[i % greens.length];
-      g.globalAlpha = 0.55;
+      g.globalAlpha = 0.6;
       g.beginPath();
-      g.arc(Math.random() * w, Math.random() * h * 0.65, 14 + Math.random() * 30, 0, Math.PI * 2);
+      g.arc((i * 733) % w + Math.sin(i) * 30, ((i * 191) % (h * 0.6)), 14 + (i % 7) * 5, 0, Math.PI * 2);
       g.fill();
     }
     g.filter = 'none';
     g.globalAlpha = 1;
     // 苔の地面
-    g.fillStyle = '#4f7a3c';
-    g.fillRect(0, h * 0.85, w, h * 0.15);
+    const moss = g.createLinearGradient(0, h * 0.86, 0, h);
+    moss.addColorStop(0, '#5a8442');
+    moss.addColorStop(1, '#3d6330');
+    g.fillStyle = moss;
+    g.fillRect(0, h * 0.86, w, h * 0.14);
   });
 }
 
